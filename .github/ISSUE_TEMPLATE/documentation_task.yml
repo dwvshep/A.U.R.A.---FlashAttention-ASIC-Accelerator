@@ -1,0 +1,17 @@
+name: Project Documentation Task
+description: Document research, design, implementation, and verification of new IP
+title: "Documentation"
+labels: ["Research","Design","Implementation","Verification"]
+assignees: []
+body:
+  - type: input
+    id: module_name
+    attributes:
+      label: Module Name
+      placeholder: "MAC Block"
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      placeholder: "- Cleanly Document the 4 stages of development involved with this module"

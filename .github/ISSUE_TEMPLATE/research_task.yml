@@ -1,0 +1,17 @@
+name: Architecture Level Design Task
+description: Research Architectural tradeoffs and designs and adjust block level diagram
+title: "Research and Architecture"
+labels: ["Block Diagram","Architecture","Datapath"]
+assignees: []
+body:
+  - type: input
+    id: module_name
+    attributes:
+      label: Module Name
+      placeholder: "MAC Block"
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      placeholder: "- Optimize the data flow and implementation of the MAC block"

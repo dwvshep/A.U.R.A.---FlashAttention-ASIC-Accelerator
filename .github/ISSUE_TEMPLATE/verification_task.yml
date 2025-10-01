@@ -1,0 +1,17 @@
+name: System/Module Verification Task
+description: Design, implement, and execute a testbench to verify a sub-module or whole datapath
+title: "Verification"
+labels: ["Module","System","Datapath", "Formal"]
+assignees: []
+body:
+  - type: input
+    id: module_name
+    attributes:
+      label: Module Name
+      placeholder: "MAC Block"
+
+  - type: textarea
+    id: Methodology
+    attributes:
+      label: Methodology
+      placeholder: "- UVM\n- C++\n- Formal"

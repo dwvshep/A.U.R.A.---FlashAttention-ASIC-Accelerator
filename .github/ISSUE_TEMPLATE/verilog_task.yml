@@ -1,0 +1,29 @@
+name: Verilog Module Design Task
+description: Design, implement, and validate a specific sub-module
+title: "Module Design"
+labels: ["Verilog","Architecture","Datapath"]
+assignees: []
+body:
+  - type: input
+    id: module_name
+    attributes:
+      label: Module Name
+      placeholder: "MAC Block"
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      placeholder: "- Single Cycle Multiply-and-Accumulate with minimal gates"
+
+  - type: textarea
+    id: design
+    attributes:
+      label: Hardware/Algorithm Design
+      placeholder: "- Systolic Array style data shifting into the block each iteration"
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification & Testing
+      placeholder: "- UVM-based testbench with constrained random sequences\n- Directed testbench in SV/C++"
