@@ -14,21 +14,41 @@ module expmul(
     output rdy_out,
 
     //Data signals
-    input INT_T a,
-    input INT_T b,
-    input V_VECTOR_T vec_in,
-    output V_VECTOR_T vec_out
+    input INT_T a_in,
+    input INT_T b_in,
+    input V_VECTOR_T v_in,
+    output V_VECTOR_T v_out
 );
+
+    //Internal Pipeline Registers
+    INT_T a;
+    INT_T b;
+    V_VECTOR_T v;
+    logic valid_reg;
+
+    assign vld_out = valid_reg;
+    assign rdy_out = rdy_in;
 
     //Latch inputs first
     always_ff @(posedge clk) begin
         if(rst) begin
-
+            a <= '0;
+            b <= '0;
+            v <= '0;
+            valid_reg <= 1'b0;
         end else begin
-
+            if(vld_in && rdy_in) begin //Handshake successful
+                a <= a_in;
+                b <= b_in;
+                v <= v_in;
+                valid_reg <= 1'b1;
+            end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
+                valid_reg <= 1'b0;
+            end
         end
     end
 
+    //output is combinational
     always_comb begin
         
     end
