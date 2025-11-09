@@ -31,3 +31,9 @@
 `define INTEGER_WIDTH 16          // Width of integer data types (4, 8, 16, 32)
 
 `define Q_TILE_WIDTH 
+
+
+
+typedef signed logic [`INTEGER_WIDTH-1:0] INT_T;
+
+typedef INT_T [] Q_VECTOR_T;
