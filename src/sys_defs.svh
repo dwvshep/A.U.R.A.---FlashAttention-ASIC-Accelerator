@@ -22,18 +22,31 @@
 //Comment out when synthesizing
 //`define DEBUG 
 
+`define INTEGER_WIDTH 16          // Width of integer data types (4, 8, 16, 32)
+
 `define SRAM_SIZE_KB  128          // Size of SRAM in KB
 
 `define MAX_EMBEDDING_DIM 64     // Maximum embedding dimension supported
 
-`define MAX_SEQ_LENGTH 1024        // Maximum sequence length supported
+`define K_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one K row vector in SRAM
 
-`define INTEGER_WIDTH 16          // Width of integer data types (4, 8, 16, 32)
+`define V_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one V row vector in SRAM
 
-`define Q_TILE_WIDTH 
+//We can support arbitrary sequennce lengths
+//`define MAX_SEQ_LENGTH 1024        // Maximum sequence length supported
+
+`define Q_SRAM_BYTES (`SRAM_SIZE_KB * 1024 - `K_SRAM_BYTES - `V_SRAM_BYTES) // Bytes available to store Q vectors in SRAM
+
+`define Q_SRAM_ROW_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one Q row vector in SRAM
+
+`define Q_SRAM_DEPTH (`Q_SRAM_BYTES/`Q_SRAM_ROW_BYTES) // Number of full length Q row vectors that can be stored in SRAM
 
 
 
 typedef signed logic [`INTEGER_WIDTH-1:0] INT_T;
 
-typedef INT_T [] Q_VECTOR_T;
+typedef INT_T [`MAX_EMBEDDING_DIM-1:0] Q_VECTOR_T;
+
+typedef INT_T [`MAX_EMBEDDING_DIM-1:0] K_VECTOR_T;
+
+typedef INT_T [`MAX_EMBEDDING_DIM-1:0] V_VECTOR_T;
