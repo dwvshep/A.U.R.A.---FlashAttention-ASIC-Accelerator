@@ -58,6 +58,7 @@ module vector_division #(
 
     //Use this if division module is pipelined
     //But remember to not latch inputs in this top module so you dont waste an extra cycle
+    //Also add support for internal valid-ready signals
     generate
         for (genvar i = 0; i < VEC_LEN; i++) begin : gen_div
             int_division div_inst (

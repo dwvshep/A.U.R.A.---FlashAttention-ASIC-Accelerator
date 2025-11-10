@@ -14,13 +14,17 @@ module max(
     //Data signals
     input INT_T s_in,
     input INT_T m_prev_in,
+    input V_VECTOR_T v_in,
     output INT_T m_out,
-    output INT_T s_out
+    output INT_T s_out,
+    output INT_T m_prev_out,
+    output V_VECTOR_T v_out
 );
 
     //Internal Pipeline Registers
     INT_T s;
     INT_T m_prev;
+    V_VECTOR_T v;
     logic valid_reg;
 
     assign vld_out = valid_reg;
@@ -31,11 +35,13 @@ module max(
         if(rst) begin
             s <= '0;
             m_prev <= '0;
+            v <= '0;
             valid_reg <= 1'b0;
         end else begin
             if(vld_in && rdy_in) begin //Handshake successful
                 s <= s_in;
                 m_prev <= m_prev_in;
+                v <= v_in;
                 valid_reg <= 1'b1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
                 valid_reg <= 1'b0;
@@ -47,6 +53,8 @@ module max(
     always_comb begin
         m_out = (s > m_prev) ? s : m_prev;
         s_out = s;
+        m_prev_out = m_prev;
+        v_out = v;
     end
 
 endmodule

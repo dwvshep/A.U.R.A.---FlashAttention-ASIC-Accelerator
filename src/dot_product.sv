@@ -16,12 +16,15 @@ module dot_product(
     //Data signals
     input Q_VECTOR_T q_in,
     input K_VECTOR_T k_in,
+    input V_VECTOR_T v_in,
     output INT_T s_out
+    output V_VECTOR_T v_out
 );
 
     //Internal Pipeline Registers
     Q_VECTOR_T q;
     K_VECTOR_T k;
+    V_VECTOR_T v;
     logic valid_reg;
 
     assign vld_out = valid_reg;
@@ -32,11 +35,13 @@ module dot_product(
         if(rst) begin
             q <= '0;
             k <= '0;
+            v <= '0;
             valid_reg <= 1'b0;
         end else begin
             if(vld_in && rdy_in) begin //Handshake successful
                 q <= q_in;
                 k <= k_in;
+                v <= v_in;
                 valid_reg <= 1'b1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
                 valid_reg <= 1'b0;
@@ -46,7 +51,8 @@ module dot_product(
 
     //output is combinational
     always_comb begin
-        //See implementation options from chatgpt below (I like Option 2)
+        v_out = v;
+        //See logic implementation options from chatgpt below (I like Option 2)
     end
 
     //Option 1: Fully combinational (single-cycle MAC tree)
