@@ -102,9 +102,9 @@ module top(
         .clk(clk),
         .rst(rst),
         .vld_in(dot_product_valid),
-        .rdy_in(),
-        .vld_out(),
-        .rdy_out(),
+        .rdy_in(expmul_ready),
+        .vld_out(max_valid),
+        .rdy_out(max_ready),
         .s_in(score),
         .m_prev_in(max_score),
         .v_in(v_vector_delayed),
@@ -114,11 +114,11 @@ module top(
         .v_out(v_vector_double_delayed)
     );
 
-    expmul_stage expmul_stage_inst (
+    expmul expmul_inst (
         .clk(clk),
         .rst(rst),
-        .vld_in(v_handshake_reg_2_valid),
-        .rdy_in(vector_division_ready),
+        .vld_in(max_valid),
+        .rdy_in(vec_add_ready),
         .vld_out(expmul_valid),
         .rdy_out(expmul_ready),
         .m_in(max_score),
@@ -133,10 +133,10 @@ module top(
     vec_add vec_add_inst (
         .clk(clk),
         .rst(rst),
-        .vld_in(),
-        .rdy_in(),
-        .vld_out(),
-        .rdy_out(),
+        .vld_in(expmul_valid),
+        .rdy_in(vector_division_ready),
+        .vld_out(vec_add_valid),
+        .rdy_out(vec_add_ready),
         .vec_a_in(exp_o_vector),
         .vec_b_in(exp_v_vector),
         .vec_out(output_vector)
@@ -145,10 +145,10 @@ module top(
     vector_division vector_division_inst (
         .clk(clk),
         .rst(rst),
-        .vld_in(),
+        .vld_in(vec_add_valid),
         .rdy_in(),
-        .vld_out(),
-        .rdy_out(),
+        .vld_out(vector_division_valid),
+        .rdy_out(vector_division_ready),
         .vec_in(output_vector[`MAX_EMBEDDING_DIM-1:0]),
         .divisor_in(output_vector[`MAX_EMBEDDING_DIM]),
         .vec_out(output_vector_scaled)
