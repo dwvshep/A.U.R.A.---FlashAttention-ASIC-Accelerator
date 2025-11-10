@@ -16,14 +16,14 @@ module expmul(
     //Data signals
     input INT_T a_in,
     input INT_T b_in,
-    input V_VECTOR_T v_in,
-    output V_VECTOR_T v_out
+    input STAR_VECTOR_T v_in,
+    output STAR_VECTOR_T v_out
 );
 
     //Internal Pipeline Registers
     INT_T a;
     INT_T b;
-    V_VECTOR_T v;
+    STAR_VECTOR_T v;
     logic valid_reg;
 
     assign vld_out = valid_reg;

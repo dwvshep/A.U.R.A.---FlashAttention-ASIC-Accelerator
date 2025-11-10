@@ -14,7 +14,8 @@ module max(
     //Data signals
     input INT_T s_in,
     input INT_T m_prev_in,
-    output INT_T m_out
+    output INT_T m_out,
+    output INT_T s_out
 );
 
     //Internal Pipeline Registers
@@ -42,9 +43,10 @@ module max(
         end
     end
 
-    //output is combinational
+    //outputs are combinational
     always_comb begin
-        
+        m_out = (s > m_prev) ? s : m_prev;
+        s_out = s;
     end
 
 endmodule

@@ -50,3 +50,7 @@ typedef INT_T [`MAX_EMBEDDING_DIM-1:0] Q_VECTOR_T;
 typedef INT_T [`MAX_EMBEDDING_DIM-1:0] K_VECTOR_T;
 
 typedef INT_T [`MAX_EMBEDDING_DIM-1:0] V_VECTOR_T;
+
+typedef INT_T [`MAX_EMBEDDING_DIM-1:0] O_VECTOR_T;
+
+typedef INT_T [`MAX_EMBEDDING_DIM:0] STAR_VECTOR_T; //Append 1 to the vector to store l in the output

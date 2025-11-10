@@ -46,7 +46,48 @@ module dot_product(
 
     //output is combinational
     always_comb begin
-        
+        //See implementation options from chatgpt below (I like Option 2)
+    end
+
+    //Option 1: Fully combinational (single-cycle MAC tree)
+    always_comb begin
+        logic signed [INT_WIDTH+log2(dk)-1:0] acc;
+        acc = '0;
+        for (int i = 0; i < DK; i++) begin
+            acc += q[i] * k[i];
+        end
+        s_out = acc >>> 3; // divide by sqrt(64)
+    end
+
+    //Option 2: Pipelined / partially combinational tree
+    logic signed [INT_WIDTH+3:0] partial_sum [0:7];
+
+    always_comb begin
+        for (int g = 0; g < 8; g++) begin
+            partial_sum[g] = '0;
+            for (int i = 0; i < 8; i++)
+                partial_sum[g] += q[g*8+i] * k[g*8+i];
+        end
+        logic signed [INT_WIDTH+6:0] acc = '0;
+        for (int g = 0; g < 8; g++)
+            acc += partial_sum[g];
+        s_out = acc >>> 3;
+    end
+    
+    //Option 3: Sequential MAC (1 multiplier reused)
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            acc <= '0;
+            idx <= 0;
+            valid_reg <= 0;
+        end else if (vld_in && rdy_in) begin
+            acc <= acc + q_in[idx] * k_in[idx];
+            idx <= idx + 1;
+            if (idx == DK-1) begin
+                s_out <= acc >>> 3;
+                valid_reg <= 1;
+            end
+        end
     end
 
 
