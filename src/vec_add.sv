@@ -5,14 +5,14 @@ module vec_add #(
     parameter int DATA_WIDTH = `INTEGER_WIDTH       // Bit width of each element
 )(
     // Control signals
-    input  logic clk,
-    input  logic rst,
+    input  clk,
+    input  rst,
 
     // Handshake signals
-    input  logic vld_in,
-    input  logic rdy_in,
-    output logic vld_out,
-    output logic rdy_out,
+    input  vld_in,
+    input  rdy_in,
+    output vld_out,
+    output rdy_out,
 
     // Data signals
     input  logic [DATA_WIDTH-1:0] a_in [VEC_LEN],

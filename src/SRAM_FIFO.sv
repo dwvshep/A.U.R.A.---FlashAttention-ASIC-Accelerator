@@ -1,30 +1,16 @@
-//COPIED FROM 470 SOURCE CODE
+//This is a simple SRAM FIFO with parameterizable width, depth, and read ports
+module SRAM_FIFO #(
+    parameter WIDTH      = 32,
+    parameter DEPTH      = 32
+)(
+    // Control signals
+    input  clock,
+    input  reset,
 
-///////////////////////////////////////////////////////////
-// 
-// Module:  memDP
-// Purpose: Generic dual-ported memory
-//          Optionally add multiple read ports
-// 
-///////////////////////////////////////////////////////////
-
-module SRAM
-  #(parameter WIDTH      = 32,
-    parameter DEPTH      = 32,
-    parameter READ_PORTS = 1,
-    parameter BYPASS_EN  = 0   // 0: Read data will update at positive edge
-                               // 1: Read data will update combinationally if
-                               //    write to same address
-   )
-   (// ------------------------------------------------------------ //
-    //                      Clock and Reset                         //
-    // ------------------------------------------------------------ //
-    input                                            clock,
-    input                                            reset,
-
-    // ------------------------------------------------------------ //
-    //                      Read interface                          //
-    // ------------------------------------------------------------ //
+    // Data signals
+    input  logic [WIDTH-1:0]                 wdata,   // Write data
+    input                                            we,     // Write enable
+    
     input        [READ_PORTS-1:0]                    re,     // Read enable
     input        [READ_PORTS-1:0][$clog2(DEPTH)-1:0] raddr,  // Read address
     output logic [READ_PORTS-1:0][WIDTH        -1:0] rdata,  // Read data

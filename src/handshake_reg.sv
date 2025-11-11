@@ -2,14 +2,14 @@
 
 module handshake_reg(
     //control signals
-    input  logic clk,
-    input  logic rst,
+    input  clk,
+    input  rst,
 
     //Handshake signals
-    input  logic vld_in,
-    input  logic rdy_in,
-    output logic vld_out,
-    output logic rdy_out,
+    input  vld_in,
+    input  rdy_in,
+    output vld_out,
+    output rdy_out,
 
     //Data signals
     input  DATA_T data_in,

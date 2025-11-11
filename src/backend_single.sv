@@ -5,10 +5,10 @@ module AURA_PE(
     input rst, // System reset
 
     //Handshake Signals
-    input logic inputs_valid,
-    input logic ctrl_ready,
-    output logic output_valid,
-    output logic backend_ready,
+    input inputs_valid,
+    input ctrl_ready,
+    output output_valid,
+    output backend_ready,
 
     //Data Signals
     input Q_VECTOR_T q_vector,
