@@ -2,6 +2,22 @@
 
 //Formula: vec_out[i] = exp(a - b) * vec_in[i]
 
+/*
+Algorithm:
+
+Stage 1:
+    diff = a - b
+
+Stage 2:
+    Log2Exp(X) = −⌊X + (X ≫ 1) − (Xˆ ≫ 4)⌉
+    X is an INT8 (i.e XXXXXXXX.)
+    define intermediate 8 bit fixed point variables m and n
+    m will be represented as 7 integer bits and 1 fractional bit
+    n will be represented as 4 integer bits and 4 fractional bits
+    Therefore, this formula: m = x >> 1 is the same as m = x
+    and this formula: n = x >> 4 is the same as n = x
+*/
+
 module expmul_stage(
     //control signals
     input clk,

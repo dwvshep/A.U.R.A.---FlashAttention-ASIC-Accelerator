@@ -22,18 +22,25 @@
 //Comment out when synthesizing
 //`define DEBUG 
 
-`define INTEGER_WIDTH 16          // Width of integer data types (4, 8, 16, 32)
+`define INTEGER_WIDTH 8           // Width of integer data types (4, 8, 16, 32)
 
-`define SRAM_SIZE_KB  128          // Size of SRAM in KB
+`define MAX_EMBEDDING_DIM 64      // Maximum embedding dimension supported
 
-`define MAX_EMBEDDING_DIM 64     // Maximum embedding dimension supported
+`define MAX_SEQ_LENGTH 512        // Maximum sequence length supported
+
+`define MEM_BLOCK_SIZE_BITS 64    // Size of memory block in bits
+
+`define MEM_BLOCK_SIZE_BYTES (`MEM_BLOCK_SIZE_BITS / 8) // Size of memory block in bytes
+
+`define MAX_NUM_PE ((`MAX_SEQ_LENGTH * `MEM_BLOCK_SIZE_BYTES) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
+
+`define NUM_PE `MAX_NUM_PE        // Number of parallel processing elements
+
+`define SRAM_SIZE_KB  128         // Size of SRAM in KB
 
 `define K_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one K row vector in SRAM
 
 `define V_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one V row vector in SRAM
-
-//We can support arbitrary sequennce lengths
-//`define MAX_SEQ_LENGTH 1024        // Maximum sequence length supported
 
 `define Q_SRAM_BYTES (`SRAM_SIZE_KB * 1024 - `K_SRAM_BYTES - `V_SRAM_BYTES) // Bytes available to store Q vectors in SRAM
 
