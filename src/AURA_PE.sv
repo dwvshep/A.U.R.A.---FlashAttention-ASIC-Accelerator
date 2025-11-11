@@ -20,6 +20,7 @@ module AURA_PE(
     //Internal Data Signals
     V_VECTOR_T v_vector_delayed;
     V_VECTOR_T v_vector_double_delayed;
+    STAR_VECTOR_T v_star;
     INT_T score;
     INT_T score_delayed;
     INT_T max_score;
@@ -37,6 +38,10 @@ module AURA_PE(
     logic vec_add_valid;
     logic vec_add_ready;
     logic vector_division_ready;
+
+    //Generate v_star by appending 1 to v_vector_double_delayed
+    assign v_star[`MAX_EMBEDDING_DIM-1:0] = v_vector_double_delayed;
+    assign v_star[`MAX_EMBEDDING_DIM] = 1;
 
     //Internal Data Flow Modules
     dot_product dot_product_inst (
@@ -80,7 +85,7 @@ module AURA_PE(
         .m_prev_in(max_score_prev),
         .o_star_prev_in(output_vector),
         .s_in(score_delayed),
-        .v_star_in({1, v_vector_double_delayed}),
+        .v_star_in(v_star),
         .exp_v_out(exp_v_vector),
         .exp_o_out(exp_o_vector)
     );
