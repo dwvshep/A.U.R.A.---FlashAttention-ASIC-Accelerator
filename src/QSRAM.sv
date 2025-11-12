@@ -5,7 +5,7 @@
 // "activate" it for compute, and switch the fill bank to the other side.
 //
 // Assumptions:
-//  - Each Q vector is Q_WIDTH bits (e.g. d_k * 8 for int8).
+//  - Each Q vector is ROW_WIDTH bits (e.g. d_k * 8 for int8).
 //  - You load exactly NUM_PES vectors per bank.
 //  - Each vector maps to exactly one PE.
 //
@@ -19,6 +19,12 @@
 //  - This is fully synchronous, no explicit memory protocol here.
 //  - You can treat load_* as coming from your "DRAM" adapter.
 
+function automatic logic [NUM_ROWS*ROW_WIDTH-1:0]
+    pack_bank (input logic [ROW_WIDTH-1:0] bank [NUM_ROWS]);
+    for (int i = 0; i < NUM_ROWS; i++)
+        pack_bank[i*ROW_WIDTH +: ROW_WIDTH] = bank[i];
+endfunction
+
 module QSRAM #(
     parameter integer NUM_ROWS  = `NUM_PES,  // number of rows per bank
     parameter integer ROW_WIDTH  = `MAX_EMBEDDING_DIM * `INTEGER_WIDTH  // bits per row
@@ -27,10 +33,10 @@ module QSRAM #(
     input                              rst,
 
     // Handshaking between memory controller and backend
-    input                              load_valid,
+    input                              load_data_valid,
     input                              backend_ready,
-    output                             load_ready,
-    output                             backend_start,
+    output                             sram_ready,
+    output                             sram_data_valid,
 
     // Data signals from memory controller to backend
     input  logic [ROW_WIDTH-1:0]       load_data,
@@ -42,53 +48,45 @@ module QSRAM #(
     // --------------------------------------------
 
     // Bank 0 and Bank 1: each has NUM_PES entries of Q_WIDTH bits.
-    reg [ROW_WIDTH-1:0] bank0 [0:NUM_ROWS-1];
-    reg [ROW_WIDTH-1:0] bank1 [0:NUM_ROWS-1];
+    logic [ROW_WIDTH-1:0] bank0 [0:NUM_ROWS-1];
+    logic [ROW_WIDTH-1:0] bank1 [0:NUM_ROWS-1];
 
-    // Which bank is currently the "fill" bank (0 or 1)?
-    reg fill_bank;
+    // Which bank is currently being filled (0 or 1)?
+    logic fill_bank;
 
-    // Write index into the current fill bank: 0 .. NUM_PES-1
-    localparam integer WR_IDX_WIDTH = $clog2(NUM_PES);
-    reg [WR_IDX_WIDTH-1:0] wr_idx;
+    //Which bank is currently being read by backend (0 or 1)?
+    logic read_bank;
 
-    // Full flags for each bank (set when NUM_PES vectors written)
-    reg bank0_full;
-    reg bank1_full;
+    // Write index into the current fill bank: 0 .. NUM_ROWS-1
+    localparam integer WR_IDX_WIDTH = $clog2(NUM_ROWS);
+    logic [WR_IDX_WIDTH-1:0] wr_idx;
 
-    // Active bank used by the PEs (0 or 1) and a flag that says "in use".
-    reg        active_bank;
-    reg        active_valid;
+    // Full flags for each bank (set when NUM_ROWS vectors written)
+    logic bank0_full;
+    logic bank1_full;
 
-    assign active_bank_id = active_bank;
-    assign bank_active    = active_valid;
+    // Output data valid when the read bank is full
+    assign sram_data_valid = (read_bank) ? bank1_full : bank0_full;
 
-    // A bank is "available for compute" if it is full and not the current active bank.
-    wire bank0_ready_for_compute = bank0_full && (!active_valid || (active_bank != 1'b0));
-    wire bank1_ready_for_compute = bank1_full && (!active_valid || (active_bank != 1'b1));
-
-    assign bank_full = bank0_ready_for_compute || bank1_ready_for_compute;
+    // SRAM ready to receive a new row when the fill bank is not full
+    assign sram_ready = (fill_bank) ? !bank1_full : !bank0_full;
 
     // --------------------------------------------
     // Load-side: write into the current fill bank
     // --------------------------------------------
 
-    // We can accept data as long as the current fill bank isn't full.
-    wire fill_bank_full = (fill_bank == 1'b0) ? bank0_full : bank1_full;
-    assign load_ready   = !fill_bank_full;
-
     integer i;
 
     // Write logic
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            fill_bank   <= 1'b0;
-            wr_idx      <= {WR_IDX_WIDTH{1'b0}};
-            bank0_full  <= 1'b0;
-            bank1_full  <= 1'b0;
+    always @(posedge clk) begin
+        if (rst) begin
+            fill_bank   <= 0;
+            wr_idx      <= '0;
+            bank0_full  <= 0;
+            bank1_full  <= 0;
         end else begin
             // Handle load
-            if (load_valid && load_ready) begin
+            if (load_data_valid && sram_ready) begin
                 if (!fill_bank) begin
                     bank0[wr_idx] <= load_data;
                 end else begin
@@ -96,8 +94,9 @@ module QSRAM #(
                 end
 
                 // Advance write index
-                if (wr_idx == NUM_PES-1) begin
-                    wr_idx <= {WR_IDX_WIDTH{1'b0}};
+                wr_idx <= wr_idx + 1'b1; //Wraps around automatically (power of 2 bits)
+
+                if (wr_idx == NUM_ROWS-1) begin
                     // Mark this bank full
                     if (!fill_bank) begin
                         bank0_full <= 1'b1;
@@ -108,8 +107,6 @@ module QSRAM #(
                     // Switch fill bank if the other one is not active+full
                     // (simple ping-pong; you can refine this if you want).
                     fill_bank <= ~fill_bank;
-                end else begin
-                    wr_idx <= wr_idx + 1'b1;
                 end
             end
 

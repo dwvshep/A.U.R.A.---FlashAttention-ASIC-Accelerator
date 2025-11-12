@@ -23,7 +23,7 @@ module int_division(
     logic valid_reg;
 
     assign vld_out = valid_reg;
-    assign rdy_out = rdy_in;
+    assign rdy_out = rdy_in || !valid_reg;
 
     // Latch inputs first
     always_ff @(posedge clk) begin
@@ -32,7 +32,7 @@ module int_division(
             denominator <= '0;
             valid_reg <= 1'b0;
         end else begin
-            if (vld_in && rdy_in) begin // Handshake successful
+            if (vld_in && rdy_out) begin // Handshake successful
                 numerator <= numerator_in;
                 denominator <= denominator_in;
                 valid_reg <= 1'b1;

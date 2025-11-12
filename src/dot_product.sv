@@ -10,7 +10,7 @@ module dot_product(
     //Handshake signals
     input vld_in,   //Upstream valid
     input rdy_in,   //Downstream ready
-    output vld_out, //Outputs from this cycle will are valid
+    output vld_out, //Outputs from this cycle are valid
     output rdy_out, //Ready to accept new inputs
 
     //Data signals
@@ -26,9 +26,10 @@ module dot_product(
     K_VECTOR_T k;
     V_VECTOR_T v;
     logic valid_reg;
+    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] row_counter;
 
     assign vld_out = valid_reg;
-    assign rdy_out = rdy_in;
+    assign rdy_out = rdy_in || !valid_reg;
 
     //Latch inputs first
     always_ff @(posedge clk) begin
@@ -37,8 +38,9 @@ module dot_product(
             k <= '0;
             v <= '0;
             valid_reg <= 1'b0;
+            row_counter <= '0;
         end else begin
-            if(vld_in && rdy_in) begin //Handshake successful
+            if(vld_in && rdy_out) begin //Handshake successful
                 q <= q_in;
                 k <= k_in;
                 v <= v_in;

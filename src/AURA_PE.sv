@@ -43,11 +43,12 @@ module AURA_PE(
     assign v_star[`MAX_EMBEDDING_DIM-1:0] = v_vector_double_delayed;
     assign v_star[`MAX_EMBEDDING_DIM] = 1;
 
+
     //Internal Data Flow Modules
     dot_product dot_product_inst (
         .clk(clk),
         .rst(rst),
-        .vld_in(inputs_valid),
+        .vld_in(vectors_valid),
         .rdy_in(max_ready),
         .vld_out(dot_product_valid),
         .rdy_out(backend_ready),

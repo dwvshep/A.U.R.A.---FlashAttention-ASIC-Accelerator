@@ -21,7 +21,7 @@ module handshake_reg(
     logic valid_reg;
 
     assign vld_out = valid_reg;
-    assign rdy_out = rdy_in;
+    assign rdy_out = rdy_in || !valid_reg;
     assign data_out = data_reg;
 
     //Latch inputs first
@@ -30,7 +30,7 @@ module handshake_reg(
             data_reg <= '0;
             valid_reg <= 1'b0;
         end else begin
-            if(vld_in && rdy_in) begin //Handshake successful
+            if(vld_in && rdy_out) begin //Handshake successful
                 data_reg <= data_in;
                 valid_reg <= 1'b1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
