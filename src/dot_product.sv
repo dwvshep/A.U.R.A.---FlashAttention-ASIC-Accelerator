@@ -29,24 +29,35 @@ module dot_product(
     logic [$clog2(`MAX_SEQ_LENGTH)-1:0] row_counter;
 
     assign vld_out = valid_reg;
-    assign rdy_out = rdy_in || !valid_reg;
+    //assign rdy_out = rdy_in || !valid_reg;
+    assign rdy_out = !valid_reg || (rdy_in && (row_counter == 0));
 
-    //Latch inputs first
+    //Latch Q input
     always_ff @(posedge clk) begin
         if(rst) begin
             q <= '0;
-            k <= '0;
-            v <= '0;
             valid_reg <= 1'b0;
             row_counter <= '0;
         end else begin
             if(vld_in && rdy_out) begin //Handshake successful
                 q <= q_in;
-                k <= k_in;
-                v <= v_in;
                 valid_reg <= 1'b1;
+                row_counter <= `MAX_SEQ_LENGTH - 1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
                 valid_reg <= 1'b0;
+            end
+        end
+    end
+
+    //Latch K and V inputs
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            k <= '0;
+            v <= '0;
+        end else begin
+            if(vld_in && rdy_out) begin //Handshake successful
+                k <= k_in;
+                v <= v_in;
             end
         end
     end
