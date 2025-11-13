@@ -26,13 +26,30 @@ module top(
     O_VECTOR_T output_vector_scaled;
 
     //Internal Handshake Signals
-    logic inputs_valid;
+    logic Q_vld_in;
+    logic K_vld_in;
+    logic V_vld_in;
+    logic Q_rdy_out;
+    logic K_rdy_out;
+    logic V_rdy_out;
     logic ctrl_ready;
     logic output_valid;
-    logic backend_ready;
     
-    //Instantiate SRAMs for Q tiles, K vectors, and V vectors
-    SRAM Q_TILE_SRAM (
+    //Instantiate SRAMs for Q tiles, K vectors, V vectors, and O vectors
+    QSRAM QSRAM_inst (
+        .clock(clk),
+        .reset(rst),
+        
+        .write_enable(),    //Asserted when memory controller is ready to write an entire row
+        .read_enable(),     //Asserted when all backend PEs are ready to read
+        .read_data_valid(),    //Assert when entire bank is ready to be read
+        .sram_ready(),        //Asserted when the fill bank can accept a new row
+
+        .write_data(),      // Input write data
+        .read_data()        // Output read data array
+    );
+
+    KSRAM KSRAM_inst (
         .clock(clk),
         .reset(rst),
         // Read port 0
@@ -45,7 +62,7 @@ module top(
         .wdata()     // Write data
     );
 
-    SRAM K_VECTOR_SRAM (
+    VSRAM VSRAM_inst (
         .clock(clk),
         .reset(rst),
         // Read port 0
@@ -58,35 +75,41 @@ module top(
         .wdata()     // Write data
     );
 
-    SRAM V_VECTOR_SRAM (
+    OSRAM OSRAM_inst (
         .clock(clk),
         .reset(rst),
-        // Read port 0
-        .re(),       // Read enable
-        .raddr(),    // Read address
-        .rdata(),    // Read data
-        // Write port
-        .we(),       // Write enable
-        .waddr(),    // Write address
-        .wdata()     // Write data
+        
+        .write_enable(),    //Asserted when PEs are ready to write an entire bank (can just check the first one)
+        .drain_enable(),     //Asserted when all backend PEs are ready to read
+        .drain_data_valid(),  //Assert when any data in the drain bank is ready to be sent to memory
+        .sram_ready(),        //Asserted when the fill bank
+        
+        .write_data(),      // Input write data array
+        .drain_data()       // Output drain data
     );
 
 
     //Instantiate control module and backend processing modules
-    controller ctrl_inst (
+    memory_controller ctrl_inst (
         .clk(clk),
         .rst(rst),
         // Connect other signals as needed
     );
 
-    AURA_PE pe_inst (
+    PE pe_inst (
         .clk(clk),
         .rst(rst),
 
-        .inputs_valid(),
+        .Q_vld_in(Q_vld_in),
+        .K_vld_in(K_vld_in),
+        .V_vld_in(V_vld_in),
+
+        .Q_rdy_out(Q_rdy_out),
+        .K_rdy_out(K_rdy_out),
+        .V_rdy_out(V_rdy_out),
+
         .ctrl_ready(),
         .output_valid(),
-        .backend_ready(),
         
         .q_vector(q_vector),
         .k_vector(k_vector),

@@ -52,12 +52,12 @@
 
 typedef signed logic [`INTEGER_WIDTH-1:0] INT_T;
 
-typedef INT_T [`MAX_EMBEDDING_DIM-1:0] Q_VECTOR_T;
+typedef INT_T [`MAX_EMBEDDING_DIM] Q_VECTOR_T;
 
-typedef INT_T [`MAX_EMBEDDING_DIM-1:0] K_VECTOR_T;
+typedef INT_T [`MAX_EMBEDDING_DIM] K_VECTOR_T;
 
-typedef INT_T [`MAX_EMBEDDING_DIM-1:0] V_VECTOR_T;
+typedef INT_T [`MAX_EMBEDDING_DIM] V_VECTOR_T;
 
-typedef INT_T [`MAX_EMBEDDING_DIM-1:0] O_VECTOR_T;
+typedef INT_T [`MAX_EMBEDDING_DIM] O_VECTOR_T;
 
-typedef INT_T [`MAX_EMBEDDING_DIM:0] STAR_VECTOR_T; //Append 1 to the vector to store l in the output
+typedef INT_T [`MAX_EMBEDDING_DIM+1] STAR_VECTOR_T; //Append 1 to the vector to store l in the output

@@ -1,14 +1,18 @@
 //This module implements the backend single processing element (PE) for the AURA architecture.
 
-module AURA_PE(
+module PE(
     input clk, // System clock
     input rst, // System reset
 
     //Handshake Signals
-    input inputs_valid,
+    input Q_vld_in,    //Upstream valid
+    input K_vld_in,    //Upstream valid
+    input V_vld_in,    //Upstream valid
+    output Q_rdy_out,  //Backend Q ready
+    output K_rdy_out,  //Backend K ready
+    output V_rdy_out,  //Backend V ready
     input ctrl_ready,
     output output_valid,
-    output backend_ready,
 
     //Data Signals
     input Q_VECTOR_T q_vector,
@@ -30,6 +34,9 @@ module AURA_PE(
     STAR_VECTOR_T output_vector;
 
     //Internal Handshake Signals
+    logic Q_rdy_out;
+    logic K_rdy_out;
+    logic V_rdy_out
     logic dot_product_valid;
     logic max_valid;
     logic max_ready;
@@ -43,15 +50,18 @@ module AURA_PE(
     assign v_star[`MAX_EMBEDDING_DIM-1:0] = v_vector_double_delayed;
     assign v_star[`MAX_EMBEDDING_DIM] = 1;
 
-
     //Internal Data Flow Modules
     dot_product dot_product_inst (
         .clk(clk),
         .rst(rst),
-        .vld_in(vectors_valid),
+        .Q_vld_in(Q_vld_in),
+        .K_vld_in(K_vld_in),
+        .V_vld_in(V_vld_in),
         .rdy_in(max_ready),
         .vld_out(dot_product_valid),
-        .rdy_out(backend_ready),
+        .Q_rdy_out(Q_rdy_out),
+        .K_rdy_out(K_rdy_out),
+        .V_rdy_out(V_rdy_out),
         .q_in(q_vector),
         .k_in(k_vector),
         .v_in(v_vector),
