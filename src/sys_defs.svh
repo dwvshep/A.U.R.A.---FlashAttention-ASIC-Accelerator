@@ -61,3 +61,49 @@ typedef INT_T [`MAX_EMBEDDING_DIM] V_VECTOR_T;
 typedef INT_T [`MAX_EMBEDDING_DIM] O_VECTOR_T;
 
 typedef INT_T [`MAX_EMBEDDING_DIM+1] STAR_VECTOR_T; //Append 1 to the vector to store l in the output
+
+
+
+
+//////////////////////////////////
+// ---- Memory Definitions ---- //
+//////////////////////////////////
+
+typedef union packed {
+    logic [31:0] addr;
+    //?? other fields as needed
+} ADDR;
+
+`define MEM_LATENCY_IN_CYCLES (100.0/`CLOCK_PERIOD+0.49999)
+// the 0.49999 is to force ceiling(100/period). The default behavior for
+// float to integer conversion is rounding to nearest
+
+// memory tags represent a unique id for outstanding mem transactions
+// 0 is a sentinel value and is not a valid tag
+`define NUM_MEM_TAGS 15
+typedef logic [3:0] MEM_TAG;
+
+`define MEM_SIZE_IN_BYTES (64*1024)
+`define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)
+
+// A memory or cache block
+typedef union packed {
+    logic [7:0][7:0]  byte_level;
+    logic [3:0][15:0] half_level;
+    logic [1:0][31:0] word_level;
+    logic      [63:0] dbbl_level;
+} MEM_BLOCK;
+
+typedef enum logic [1:0] {
+    BYTE   = 2'h0,
+    HALF   = 2'h1,
+    WORD   = 2'h2,
+    DOUBLE = 2'h3
+} MEM_SIZE;
+
+// Memory bus commands
+typedef enum logic [1:0] {
+    MEM_NONE   = 2'h0,
+    MEM_LOAD   = 2'h1,
+    MEM_STORE  = 2'h2
+} MEM_COMMAND;

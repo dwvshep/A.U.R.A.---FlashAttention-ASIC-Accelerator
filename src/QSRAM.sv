@@ -65,10 +65,10 @@ module QSRAM #(
     always_ff @(posedge clk) begin
         if (rst) begin
             read_bank  <= 0;
-            fill_bank   <= 0;
-            wr_idx      <= '0;
-            bank0_full  <= 0;
-            bank1_full  <= 0;
+            fill_bank  <= 0;
+            wr_idx     <= '0;
+            bank0_full <= 0;
+            bank1_full <= 0;
         end else begin
             // Handle write
             if (write_enable && sram_ready) begin
