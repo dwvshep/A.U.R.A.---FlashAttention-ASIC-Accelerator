@@ -11,9 +11,9 @@
 //
 // Usage:
 //  - Drive write_enable/write_data to fill whichever bank is currently the fill bank.
-//  - When read_data_valid asserts, you know a bank is ready for compute.
+//  - When drain_data_valid asserts, you know a row is ready to write to memory.
 //  - Assert drain_enable when you're ready to write a vector back to memory.
-//  - PEs see all Q vectors for the active bank on read_data.
+//  - PEs send all O vectors to the active bank on write_data.
 //
 // Notes:
 //  - This is fully synchronous, no explicit memory protocol here.
@@ -27,7 +27,7 @@ module OSRAM #(
 
     // Handshaking between memory controller and backend
     input                              write_enable,    //Asserted when PEs are ready to write an entire bank (can just check the first one)
-    input                              drain_enable,     //Asserted when all backend PEs are ready to read
+    input                              drain_enable,     //Asserted when mem_ctrl is ready to drain
     output                             drain_data_valid,  //Assert when any data in the drain bank is ready to be sent to memory
     output                             sram_ready,        //Asserted when the fill bank can accept a new row
 

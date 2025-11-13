@@ -1,18 +1,18 @@
 //This module implements the backend single processing element (PE) for the AURA architecture.
 
 module PE(
-    input clk, // System clock
-    input rst, // System reset
+    input  clk, // System clock
+    input  rst, // System reset
 
     //Handshake Signals
-    input Q_vld_in,    //Upstream valid
-    input K_vld_in,    //Upstream valid
-    input V_vld_in,    //Upstream valid
-    output Q_rdy_out,  //Backend Q ready
-    output K_rdy_out,  //Backend K ready
-    output V_rdy_out,  //Backend V ready
-    input ctrl_ready,
-    output output_valid,
+    input  Q_vld_in,     //Upstream valid
+    input  K_vld_in,     //Upstream valid
+    input  V_vld_in,     //Upstream valid
+    output Q_rdy_out,    //Backend Q ready
+    output K_rdy_out,    //Backend K ready
+    output V_rdy_out,    //Backend V ready
+    input  O_sram_rdy, //OSRAM ready to receive output
+    output output_valid, //Output valid
 
     //Data Signals
     input Q_VECTOR_T q_vector,
@@ -47,8 +47,8 @@ module PE(
     logic vector_division_ready;
 
     //Generate v_star by appending 1 to v_vector_double_delayed
-    assign v_star[`MAX_EMBEDDING_DIM-1:0] = v_vector_double_delayed;
-    assign v_star[`MAX_EMBEDDING_DIM] = 1;
+    assign v_star[1:`MAX_EMBEDDING_DIM] = v_vector_double_delayed;
+    assign v_star[0] = 1;
 
     //Internal Data Flow Modules
     dot_product dot_product_inst (
@@ -117,11 +117,11 @@ module PE(
         .clk(clk),
         .rst(rst),
         .vld_in(vec_add_valid),
-        .rdy_in(ctrl_ready),
+        .rdy_in(O_sram_rdy),
         .vld_out(output_valid),
         .rdy_out(vector_division_ready),
-        .vec_in(output_vector[`MAX_EMBEDDING_DIM-1:0]),
-        .divisor_in(output_vector[`MAX_EMBEDDING_DIM]),
+        .vec_in(output_vector[1:`MAX_EMBEDDING_DIM]),
+        .divisor_in(output_vector[0]),
         .vec_out(output_vector_scaled)
     );
 
