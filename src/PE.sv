@@ -108,9 +108,9 @@ module PE(
         .rdy_in(vector_division_ready),
         .vld_out(vec_add_valid),
         .rdy_out(vec_add_ready),
-        .vec_a_in(exp_o_vector),
-        .vec_b_in(exp_v_vector),
-        .vec_out(output_vector)
+        .a_in(exp_o_vector),
+        .b_in(exp_v_vector),
+        .sum(output_vector)
     );
 
     vector_division vector_division_inst (

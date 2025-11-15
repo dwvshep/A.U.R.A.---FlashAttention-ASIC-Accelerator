@@ -6,15 +6,16 @@ module AURA(
     input rst, // System reset
 
     //Memory interface signals copied from 470 template
-    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
-    input MEM_BLOCK mem2proc_data,            // Data coming back from memory
-    input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
+    input  MEM_TAG     mem2proc_transaction_tag, // Memory tag for current transaction
+    input  MEM_BLOCK   mem2proc_data,            // Data coming back from memory
+    input  MEM_TAG     mem2proc_data_tag,        // Tag for which transaction data is for
 
     output MEM_COMMAND proc2mem_command, // Command sent to memory
     output ADDR        proc2mem_addr,    // Address sent to memory
     output MEM_BLOCK   proc2mem_data,     // Data sent to memory
 
     //Maybe add some output packet like the commits in 470 to test end-to-end functionality using writeback/output_mem files
+    output logic       done
 );
 
     //Memory controller handshake signals
@@ -66,11 +67,11 @@ module AURA(
     
     //Instantiate SRAMs for Q tiles, K vectors, V vectors, and Output tiles
     QSRAM QSRAM_inst (
-        .clock(clk),
-        .reset(rst),
+        .clk(clk),
+        .rst(rst),
         
-        .write_enable(ctrl_valid),    //Asserted when memory controller is ready to write an entire row
-        .read_enable(Q_rdy_out[0]),     //Asserted when all backend PEs are ready to read (just check the first one)
+        .write_enable(ctrl_vld),    //Asserted when memory controller is ready to write an entire row
+        .read_enable(Q_rdy[0]),     //Asserted when all backend PEs are ready to read (just check the first one)
         .read_data_valid(Q_vld),    //Assert when entire bank is ready to be read
         .sram_ready(Q_sram_rdy),        //Asserted when the fill bank can accept a new row
 
@@ -91,11 +92,11 @@ module AURA(
     );
 
     OSRAM OSRAM_inst (
-        .clock(clk),
-        .reset(rst),
+        .clk(clk),
+        .rst(rst),
         
         .write_enable(O_vld[0]),    //Asserted when PEs are ready to write an entire bank (can just check the first one)
-        .drain_enable(ctrl_ready),     //Asserted when all backend PEs are ready to read
+        .drain_enable(ctrl_rdy),     //Asserted when all backend PEs are ready to read
         .drain_data_valid(O_sram_vld),  //Assert when any data in the drain bank is ready to be sent to memory
         .sram_ready(O_sram_rdy),        //Asserted when the fill bank
         
