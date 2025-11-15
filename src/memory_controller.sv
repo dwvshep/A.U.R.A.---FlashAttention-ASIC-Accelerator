@@ -89,9 +89,12 @@ module memory_controller #(
     // -----------------------------
     // Vector assembly state
     // -----------------------------
-    logic [$clog2(`MAX_SEQ_LEN)-1:0] vec_index;     // which vector within the phase
-    logic [$clog2(BLOCKS_PER_VEC):0] blk_count;     // 0..BLOCKS_PER_VEC
-    logic                            have_full_vec; // flag: internal buffer contains a complete vector
+    logic [$clog2(`MAX_SEQ_LEN)-1:0]         vec_index;     // which vector within the phase
+    logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count;     // 0..BLOCKS_PER_VEC
+    logic                                    have_full_vec; // flag: internal buffer contains a complete vector
+
+    // Internal vector buffer
+    
 
     // -----------------------------
     // Memory request state

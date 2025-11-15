@@ -84,7 +84,10 @@ typedef union packed {
 typedef logic [3:0] MEM_TAG;
 
 `define MEM_SIZE_IN_BYTES (64*1024)
+
 `define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)
+
+`define MEM_BLOCKS_PER_VECTOR ((`MAX_EMBEDDING_DIM*`INTEGER_WIDTH/8)/`MEM_BLOCK_SIZE_BYTES)
 
 // A memory or cache block
 typedef union packed {
