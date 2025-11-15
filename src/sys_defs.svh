@@ -48,6 +48,10 @@
 
 `define Q_SRAM_DEPTH (`Q_SRAM_BYTES/`Q_SRAM_ROW_BYTES) // Number of full length Q row vectors that can be stored in SRAM
 
+`define EXPMUL_OUTPUT_SIZE 30
+
+`define DOT_PRODUCT_SIZE 22
+
 
 
 typedef signed logic [`INTEGER_WIDTH-1:0] INT_T;
@@ -60,7 +64,9 @@ typedef INT_T [`MAX_EMBEDDING_DIM] V_VECTOR_T;
 
 typedef INT_T [`MAX_EMBEDDING_DIM] O_VECTOR_T;
 
-typedef INT_T [`MAX_EMBEDDING_DIM+1] STAR_VECTOR_T; //Append 1 to the vector to store l in the output
+typedef  [`MAX_EMBEDDING_DIM+1][`DOT_PRODUCT_SIZE-1:0] STAR_VECTOR_T_IN; //Input to expmul
+
+typedef  [`MAX_EMBEDDING_DIM+1][`EXPMUL_OUTPUT_SIZE-1:0] STAR_VECTOR_T_OUT; //Append 1 to the vector to store l in the output, output from expmul
 
 
 
