@@ -3,7 +3,8 @@ module memory_controller #(
     parameter ADDR K_BASE          = 'h0000_1000,
     parameter ADDR V_BASE          = 'h0000_2000,
     parameter ADDR Q_BASE          = 'h0000_3000,
-    parameter ADDR O_BASE          = 'h0000_4000,   
+    parameter ADDR O_BASE          = 'h0000_4000,
+    parameter int  VECTOR_BYTES    = (`MEM_BLOCKS_PER_VECTOR*8)
 )(
     input clk,
     input rst,
@@ -30,7 +31,9 @@ module memory_controller #(
     input  O_VECTOR_T  drained_O_vector,
     output Q_VECTOR_T  loaded_Q_vector,
     output K_VECTOR_T  loaded_K_vector,
-    output V_VECTOR_T  loaded_V_vector
+    output V_VECTOR_T  loaded_V_vector,
+
+    output logic       done
 );
 
 
@@ -86,6 +89,8 @@ module memory_controller #(
         endcase
     end
 
+    assign done = (phase == PH_DONE);
+
     // -----------------------------
     // Vector assembly state
     // -----------------------------
@@ -94,13 +99,44 @@ module memory_controller #(
     logic                                    have_full_vec; // flag: internal buffer contains a complete vector
 
     // Internal vector buffer
-    
+    Q_VECTOR_T vector_buffer;
 
-    // -----------------------------
-    // Memory request state
-    // -----------------------------
-    typedef enum logic [1:0] { M_IDLE, M_READ, M_WRITE } mstate_e;
-    mstate_e mem_state, next_mem_state;
+
+    // memory address computation
+    ADDR mem_base_addr;
+    always_comb begin
+        // base addresses per phase
+        unique case (phase)
+            PH_LOAD_K:  mem_base_addr  = K_BASE + vec_index*VECTOR_BYTES;
+            PH_LOAD_V:  mem_base_addr  = V_BASE + vec_index*VECTOR_BYTES;
+            PH_LOAD_Q:  mem_base_addr  = Q_BASE + vec_index*VECTOR_BYTES;
+            PH_DRAIN_O: mem_base_addr  = O_BASE + vec_index*VECTOR_BYTES;
+            default:    mem_base_addr  = '0;
+        endcase
+
+        // full addresses per vector/block
+        proc2mem_addr = mem_base_addr + blk_count*`MEM_BLOCK_SIZE_BYTES;
+    end
+
+    // memory data computation
+    always_comb begin
+        unique case (phase)
+            PH_DRAIN_O: proc2mem_data = vector_buffer[write_index];
+            default:    proc2mem_data = '0;
+        endcase
+    end
+
+    // memory command computation
+    always_comb begin
+        unique case (phase)
+            PH_LOAD_K:  proc2mem_command  = MEM_LOAD;
+            PH_LOAD_V:  proc2mem_command  = MEM_LOAD;
+            PH_LOAD_Q:  proc2mem_command  = MEM_LOAD;
+            PH_DRAIN_O: proc2mem_command  = MEM_STORE;
+            default:    proc2mem_command  = MEM_NONE;
+        endcase
+    end
+
 
 
 

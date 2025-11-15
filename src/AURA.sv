@@ -74,7 +74,9 @@ module AURA(
         .drained_O_vector(drained_O_vector),
         .loaded_Q_vector(loaded_Q_vector),
         .loaded_K_vector(loaded_K_vector),
-        .loaded_V_vector(loaded_V_vector)
+        .loaded_V_vector(loaded_V_vector),
+
+        .done(done)
     );
     
     //Instantiate SRAMs for Q tiles, K vectors, V vectors, and Output tiles
