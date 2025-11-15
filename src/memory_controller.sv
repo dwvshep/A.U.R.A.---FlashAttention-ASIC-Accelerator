@@ -1,4 +1,10 @@
-module memory_controller(
+module memory_controller #(
+    // Addressing: base addresses for K, V, Q inputs and O outputs
+    parameter ADDR K_BASE          = 'h0000_1000,
+    parameter ADDR V_BASE          = 'h0000_2000,
+    parameter ADDR Q_BASE          = 'h0000_3000,
+    parameter ADDR O_BASE          = 'h0000_4000,   
+)(
     input clk,
     input rst,
 
@@ -10,16 +16,89 @@ module memory_controller(
     output ADDR        proc2mem_addr,    // Address sent to memory
     output MEM_BLOCK   proc2mem_data,     // Data sent to memory
 
-    // Handshake signals with QSRAM and OSRAM
+    // Handshake signals with Q K V and O SRAMs
     input  logic Q_sram_rdy,
+    input  logic K_sram_rdy,
+    input  logic V_sram_rdy,
     input  logic O_sram_vld,
-    output logic ctrl_rdy,
-    output logic ctrl_vld,
+    output logic ctrl_O_rdy,
+    output logic ctrl_Q_vld,
+    output logic ctrl_K_vld,
+    output logic ctrl_V_vld,
 
-    // Data signals to/from QSRAM/OSRAM
+    // Data signals to/from Q K V and O SRAMs
     input  O_VECTOR_T  drained_O_vector,
-    output Q_VECTOR_T  loaded_Q_vector
+    output Q_VECTOR_T  loaded_Q_vector,
+    output K_VECTOR_T  loaded_K_vector,
+    output V_VECTOR_T  loaded_V_vector
 );
+
+
+    // -----------------------------
+    // Phase FSM
+    // -----------------------------
+    typedef enum logic [2:0] {
+        PH_RESET,
+        PH_LOAD_K,
+        PH_LOAD_V,
+        PH_LOAD_Q,
+        PH_DRAIN_O,
+        PH_DONE
+    } phase_e;
+
+    phase_e phase, next_phase;
+
+    always_comb begin
+        next_phase = phase;
+
+        unique case (phase)
+            PH_RESET:   next_phase = PH_LOAD_K;
+
+            PH_LOAD_K: begin
+                // Advance to next phase after all K vectors produced to SRAM
+                if ((vec_index == `MAX_SEQ_LEN-1) && have_full_vec && ctrl_K_vld && K_sram_rdy) begin
+                    next_phase = PH_LOAD_V;
+                end
+            end
+
+            PH_LOAD_V: begin
+                // Advance to next phase after all V vectors produced to SRAM
+                if ((vec_index == `MAX_SEQ_LEN-1) && have_full_vec && ctrl_V_vld && V_sram_rdy) begin
+                    next_phase = PH_LOAD_Q;
+                end
+            end
+
+            PH_LOAD_Q: begin
+                // Advance to next phase after all Q vectors produced to SRAM
+                if ((vec_index == `MAX_SEQ_LEN-1) && have_full_vec && ctrl_Q_vld && Q_sram_rdy) begin
+                    next_phase = PH_DRAIN_O;
+                end
+            end
+
+            PH_DRAIN_O: begin
+                // Advance to next phase after all O vectors written back to memory
+                if ((vec_index == `MAX_SEQ_LEN-1) && have_full_vec && write_confirmed??) begin
+                    next_phase = PH_DONE;
+                end
+            end
+
+            default: next_phase = PH_RESET;
+        endcase
+    end
+
+    // -----------------------------
+    // Vector assembly state
+    // -----------------------------
+    logic [$clog2(`MAX_SEQ_LEN)-1:0] vec_index;     // which vector within the phase
+    logic [$clog2(BLOCKS_PER_VEC):0] blk_count;     // 0..BLOCKS_PER_VEC
+    logic                            have_full_vec; // flag: internal buffer contains a complete vector
+
+    // -----------------------------
+    // Memory request state
+    // -----------------------------
+    typedef enum logic [1:0] { M_IDLE, M_READ, M_WRITE } mstate_e;
+    mstate_e mem_state, next_mem_state;
+
 
 
 endmodule

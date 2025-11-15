@@ -14,18 +14,24 @@ module AURA(
     output ADDR        proc2mem_addr,    // Address sent to memory
     output MEM_BLOCK   proc2mem_data,     // Data sent to memory
 
-    //Maybe add some output packet like the commits in 470 to test end-to-end functionality using writeback/output_mem files
+    // Done flag for the testbench
     output logic       done
 );
 
     //Memory controller handshake signals
-    logic Q_sram_rdy
+    logic Q_sram_rdy;
+    logic K_sram_rdy;
+    logic V_sram_rdy;
     logic O_sram_vld;
-    logic ctrl_rdy;
-    logic ctrl_vld;
+    logic ctrl_O_rdy;
+    logic ctrl_Q_vld;
+    logic ctrl_K_vld;
+    logic ctrl_V_vld;
 
     //Memory controller data signals
     Q_VECTOR_T loaded_Q_vector;
+    K_VECTOR_T loaded_K_vector;
+    V_VECTOR_T loaded_V_vector;
     O_VECTOR_T drained_O_vector;
 
     //Internal Handshake Signals
@@ -57,12 +63,18 @@ module AURA(
         .proc2mem_data(proc2mem_data),
     
         .Q_sram_rdy(Q_sram_rdy),
+        .K_sram_rdy(K_sram_rdy),
+        .V_sram_rdy(V_sram_rdy),
         .O_sram_vld(O_sram_vld),
-        .ctrl_rdy(ctrl_rdy),
-        .ctrl_vld(ctrl_vld),
+        .ctrl_O_rdy(ctrl_O_rdy),
+        .ctrl_Q_vld(ctrl_Q_vld),
+        .ctrl_K_vld(ctrl_K_vld),
+        .ctrl_V_vld(ctrl_V_vld),
         
         .drained_O_vector(drained_O_vector),
-        .loaded_Q_vector(loaded_Q_vector)
+        .loaded_Q_vector(loaded_Q_vector),
+        .loaded_K_vector(loaded_K_vector),
+        .loaded_V_vector(loaded_V_vector)
     );
     
     //Instantiate SRAMs for Q tiles, K vectors, V vectors, and Output tiles
@@ -70,7 +82,7 @@ module AURA(
         .clk(clk),
         .rst(rst),
         
-        .write_enable(ctrl_vld),    //Asserted when memory controller is ready to write an entire row
+        .write_enable(ctrl_Q_vld),    //Asserted when memory controller is ready to write an entire row
         .read_enable(Q_rdy[0]),     //Asserted when all backend PEs are ready to read (just check the first one)
         .read_data_valid(Q_vld),    //Assert when entire bank is ready to be read
         .sram_ready(Q_sram_rdy),        //Asserted when the fill bank can accept a new row
@@ -82,13 +94,27 @@ module AURA(
     KSRAM KSRAM_inst (
         .clock(clk),
         .reset(rst),
-        //Other signals
+        
+        .write_enable(ctrl_K_vld),    //Asserted when memory controller is ready to write an entire row
+        .read_enable(K_rdy[0]),     //Asserted when all backend PEs are ready to read (can just check the first one)
+        .read_data_valid(K_vld),    //Assert when entire bank is ready to be read
+        .sram_ready(K_sram_rdy),        //Asserted when the fill bank can accept a new row
+
+        .write_data(loaded_K_vector),      // Input write data
+        .read_data(k_vector)        // Output read data
     );
 
     VSRAM VSRAM_inst (
         .clock(clk),
         .reset(rst),
-        //Other signals
+        
+        .write_enable(ctrl_V_vld),    //Asserted when memory controller is ready to write an entire row
+        .read_enable(V_rdy[0]),     //Asserted when all backend PEs are ready to read (can just check the first one)
+        .read_data_valid(V_vld),    //Assert when entire bank is ready to be read
+        .sram_ready(V_sram_rdy),        //Asserted when the fill bank can accept a new row
+
+        .write_data(loaded_V_vector),      // Input write data
+        .read_data(v_vector)        // Output read data
     );
 
     OSRAM OSRAM_inst (
