@@ -29,10 +29,11 @@ module AURA(
     logic ctrl_V_vld;
 
     //Memory controller data signals
-    Q_VECTOR_T loaded_Q_vector;
-    K_VECTOR_T loaded_K_vector;
-    V_VECTOR_T loaded_V_vector;
-    O_VECTOR_T drained_O_vector;
+    // Q_VECTOR_T loaded_Q_vector;
+    // K_VECTOR_T loaded_K_vector;
+    // V_VECTOR_T loaded_V_vector;
+    Q_VECTOR_T loaded_vector;
+    O_VECTOR_T drained_vector;
 
     //Internal Handshake Signals
     logic Q_vld;
@@ -71,10 +72,8 @@ module AURA(
         .ctrl_K_vld(ctrl_K_vld),
         .ctrl_V_vld(ctrl_V_vld),
         
-        .drained_O_vector(drained_O_vector),
-        .loaded_Q_vector(loaded_Q_vector),
-        .loaded_K_vector(loaded_K_vector),
-        .loaded_V_vector(loaded_V_vector),
+        .drained_vector(drained_vector),
+        .loaded_vector(loaded_vector),
 
         .done(done)
     );
@@ -89,7 +88,7 @@ module AURA(
         .read_data_valid(Q_vld),    //Assert when entire bank is ready to be read
         .sram_ready(Q_sram_rdy),        //Asserted when the fill bank can accept a new row
 
-        .write_data(loaded_Q_vector),      // Input write data
+        .write_data(loaded_vector),      // Input write data
         .read_data(q_vectors)        // Output read data array
     );
 
@@ -102,7 +101,7 @@ module AURA(
         .read_data_valid(K_vld),    //Assert when entire bank is ready to be read
         .sram_ready(K_sram_rdy),        //Asserted when the fill bank can accept a new row
 
-        .write_data(loaded_K_vector),      // Input write data
+        .write_data(loaded_vector),      // Input write data
         .read_data(k_vector)        // Output read data
     );
 
@@ -115,7 +114,7 @@ module AURA(
         .read_data_valid(V_vld),    //Assert when entire bank is ready to be read
         .sram_ready(V_sram_rdy),        //Asserted when the fill bank can accept a new row
 
-        .write_data(loaded_V_vector),      // Input write data
+        .write_data(loaded_vector),      // Input write data
         .read_data(v_vector)        // Output read data
     );
 
@@ -129,7 +128,7 @@ module AURA(
         .sram_ready(O_sram_rdy),        //Asserted when the fill bank
         
         .write_data(output_vectors_scaled),      // Input write data array
-        .drain_data(drained_O_vector)       // Output drain data
+        .drain_data(drained_vector)       // Output drain data
     );
 
 

@@ -28,14 +28,28 @@ module memory_controller #(
     output logic ctrl_V_vld,
 
     // Data signals to/from Q K V and O SRAMs
-    input  O_VECTOR_T  drained_O_vector,
-    output Q_VECTOR_T  loaded_Q_vector,
-    output K_VECTOR_T  loaded_K_vector,
-    output V_VECTOR_T  loaded_V_vector,
+    input  O_VECTOR_T  drained_vector,
+    output Q_VECTOR_T  loaded_vector,
 
     output logic       done
 );
 
+    // -----------------------------
+    // Memory Helper Signals
+    // -----------------------------
+    logic waiting_for_mem;
+    MEM_TAG expected_tag;
+
+    // -----------------------------
+    // Vector assembly state
+    // -----------------------------
+    logic [$clog2(`MAX_SEQ_LEN)-1:0]           vec_index;     // which vector within the phase
+    logic [$clog2(`MEM_BLOCKS_PER_VECTOR)-1:0] blk_count;     // 0..BLOCKS_PER_VEC
+    logic                                      have_full_vec; // flag: internal buffer contains a complete vector
+
+    // Internal vector buffer
+    Q_VECTOR_T vector_buffer;
+    logic have_full_vec;
 
     // -----------------------------
     // Phase FSM
@@ -91,16 +105,11 @@ module memory_controller #(
 
     assign done = (phase == PH_DONE);
 
-    // -----------------------------
-    // Vector assembly state
-    // -----------------------------
-    logic [$clog2(`MAX_SEQ_LEN)-1:0]         vec_index;     // which vector within the phase
-    logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count;     // 0..BLOCKS_PER_VEC
-    logic                                    have_full_vec; // flag: internal buffer contains a complete vector
 
-    // Internal vector buffer
-    Q_VECTOR_T vector_buffer;
 
+    // -----------------------------
+    // Memory signal computation
+    // -----------------------------    
 
     // memory address computation
     ADDR mem_base_addr;
@@ -121,23 +130,56 @@ module memory_controller #(
     // memory data computation
     always_comb begin
         unique case (phase)
-            PH_DRAIN_O: proc2mem_data = vector_buffer[write_index];
-            default:    proc2mem_data = '0;
+            PH_DRAIN_O: begin
+                //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
+                for(int i = 0; i < 8; i++) begin
+                    proc2mem_data.byte_level[i] = vector_buffer[write_index+i]
+                end
+            end
+            default: proc2mem_data = '0;
         endcase
     end
 
     // memory command computation
     always_comb begin
         unique case (phase)
-            PH_LOAD_K:  proc2mem_command  = MEM_LOAD;
-            PH_LOAD_V:  proc2mem_command  = MEM_LOAD;
-            PH_LOAD_Q:  proc2mem_command  = MEM_LOAD;
-            PH_DRAIN_O: proc2mem_command  = MEM_STORE;
-            default:    proc2mem_command  = MEM_NONE;
+            //THIS SCHEME ASSUMES WE CAN CONTINUOUSLY PREFETCH WITHOUT RISK OF STALLS
+            PH_LOAD_K:  proc2mem_command = MEM_LOAD;
+            PH_LOAD_V:  proc2mem_command = MEM_LOAD;
+            PH_LOAD_Q:  proc2mem_command = MEM_LOAD;
+            PH_DRAIN_O: proc2mem_command = MEM_STORE;
+            default:    proc2mem_command = MEM_NONE;
         endcase
     end
 
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            phase           <= '0;
+            vector_buffer   <= '0;
+            vec_index       <= '0;
+            blk_count       <= '0;
+            write_index     <= '0;
+            ctrl_Q_vld      <=  0;
+            ctrl_K_vld      <=  0;
+            ctrl_V_vld      <=  0;
+            ctrl_O_rdy      <=  0;
+            waiting_for_mem <= '0;
+        end else begin
+            phase <= next_phase;
+            if(waiting_for_mem && (mem2proc_data_tag == expected_tag)) begin
+                //insert mem2proc_data into vector buffer
+                //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
+                for(int i = 0; i < 8; i++) begin
+                    vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
+                end
+                write_index <= write_index + 8; //Auto wraps
+                blk_count <= blk_count + 1;
+                if() begin
 
+                end
+            end
+        end
+    end
 
 
 endmodule
