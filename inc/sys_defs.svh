@@ -50,10 +50,11 @@
 
 
 
-///////////////////////////////////
+////////////////////////////////////
 // ---- Bit Width Parameters ---- //
-///////////////////////////////////
+////////////////////////////////////
 
+//These are currently irrelevant
 `define INPUT_SIZE 8
 
 `define TWO_PRODUCT_SIZE 1 + 2*(`INPUT_SIZE-1)
@@ -62,11 +63,149 @@
 
 `define EXPMUL_OUTPUT_SIZE 30
 
-`define 
+
+
+//////////////////////////////////////
+// ---- Q-format helper macros ---- //
+//////////////////////////////////////
+
+// Compute the total width of a Qm.n number
+`define Q_WIDTH(M, N) ((M) + (N) + 1)   // +1 for sign bit
+
+// Define a packed logic vector representing signed Q-format number
+`define Q_TYPE(M, N) logic signed [`Q_WIDTH(M, N)-1:0]
+
+// Returns max signed value of width W
+`define MAX_SIGNED(W)  $signed( (1'b0 << ((W)-1)) | ((1<<((W)-1))-1) )
+
+// Returns min signed value of width W
+`define MIN_SIGNED(W)  $signed( 1 << ((W)-1) )
+
+// ----------------------------------------------------------
+// Q_ALIGN_FRAC(x, IN_W, IN_F, OUT_F)
+//
+// Aligns fixed-point number x from Q(*, IN_F) to Q(*, OUT_F)
+// - x      : signed value [IN_W-1:0]
+// - IN_W   : original bit width of x
+// - IN_F   : original fractional bits
+// - OUT_F  : target fractional bits
+//
+// Behavior:
+//   * If OUT_F > IN_F: left shift (increase fraction bits), widen first
+//   * If OUT_F < IN_F: arithmetic right shift (reduce fraction bits)
+//   * If equal: pass-through
+// Result is a SIGNED value, width >= IN_W
+// ----------------------------------------------------------
+`define Q_ALIGN_FRAC(x, IN_W, IN_F, OUT_F)                              \
+    (                                                                   \
+        /* More fractional bits in target: widen, then left shift */    \
+        ((OUT_F) > (IN_F)) ?                                            \
+            $signed({ {((OUT_F)-(IN_F)){ (x)[(IN_W)-1]}}, (x) }) <<<    \
+                     ((OUT_F)-(IN_F)) :                                 \
+        /* Fewer fractional bits in target: arithmetic right shift */   \
+        ((OUT_F) < (IN_F)) ?                                            \
+            $signed(x) >>> ((IN_F)-(OUT_F)) :                           \
+        /* Same F: no change */                                         \
+            $signed(x)                                                  \
+    )
+
+
+// -------------------------------------------------------------
+// Q_CONVERT(x, IN_W, IN_F, OUT_I, OUT_F)
+//
+// General Q-format conversion:
+//   Input:  x as signed Q(IN_I, IN_F)
+//   Output: signed Q(OUT_I, OUT_F)
+//
+// Steps:
+//   1. Fractional alignment: Q(*,IN_F) -> Q(*,OUT_F)
+//   2. Saturate to OUT_W-bit signed range
+//   3. Narrow to exactly OUT_W bits
+//
+// NOTE:
+//   - If OUT_W represents a *wider* integer range than the aligned value,
+//     no saturation will trigger; the slice behaves like a sign-preserving
+//     narrowing (or you can assign to a wider signal to get sign extension).
+// -------------------------------------------------------------
+`define Q_CONVERT(x, IN_I, IN_F, OUT_I, OUT_F)                                                                          \
+    (                                                                                                                   \                                                                     \
+        (                                                                                                               \
+            (                                                                                                           \
+                ( `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F) > `MAX_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) ) ?         \
+                    `MAX_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) :                                                               \
+                ( `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F) < `MIN_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) ) ?         \
+                    `MIN_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) :                                                               \
+                    `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F)                                                 \
+            )                                                                                                           \
+        )[`Q_WIDTH(OUT_I, OUT_F)-1:0]                                                                                   \
+    )
 
 
 
-typedef signed logic [`INTEGER_WIDTH-1:0] INT_T;
+////////////////////////////////////////////
+// ---- Fixed Point Type Definitions ---- //
+////////////////////////////////////////////
+
+// We can reduce the fractional bits at any time to save space and compromise on precision
+
+//---------------------------
+// Weights and Outputs QTypes
+//---------------------------
+
+// In-memory storage: Q0.7  (Q/K/V/O vectors)
+typedef `Q_TYPE(0, 7) MEM_QT;
+
+
+//-------------------
+// Dot-Product QTypes
+//-------------------
+
+//IDK THE BEST WAY TO STORE INTERMEDIATES IN A PROGRAMMABLE WAY FOR THE LOG FOR LOOP
+// Product of two qmem_t's
+typedef `Q_TYPE(0, 14) PRODUCT_QT;
+
+// Sum of two qproduct_t's
+typedef `Q_TYPE(1, 14) SUM2_QT;
+
+// Dot-product output: Q6.14 (64-wide dot products)
+typedef `Q_TYPE(6, 14) DOT_QT;
+
+// Logits (QKᵀ scaled by 1/√d a.k.a >>> 3): Q3.17
+typedef `Q_TYPE(3, 17) DOT_SCALED_QT;
+
+
+//-------------------
+// Expmul QTypes
+//-------------------
+
+// Difference of the two Q3.17 inputs
+typedef `Q_TYPE(4, 17) EXPMUL_DIFF_QT
+
+// Product of Q4.17 with log2e via approximation (x + x >> 1 - x >> 4)
+typedef `Q_TYPE(5, 21) EXPMUL_LOG2E_QT
+
+// Clipped exponent based on the Q5.21
+typedef `Q_TYPE(5, 0) EXPMUL_EXPONENT_QT
+
+// 2^-L * V output format (right shift by 0-15 bits): Q0.22
+// Must cast input V weights to this many fractional bits plus 1 for representing "1" appended to the beginning 
+// and plus another 9 for the 512 accumulations into the output vetor
+typedef `Q_TYPE(9, 22) EXPMUL_VSHIFT_QT;
+// If we are considering 1 as a value in the V vector, technically each value is a Q1.7, and the output would be a Q1.22
+// Once we add 512 of these together we will add 9 bits to the integer portion and therefore
+// The output would be Q10.22, but we can assume we will never really hit that max and just keep it at Q9.22
+
+//All inputs to the div module are therefore Q9.22's (32 bits)
+//The outputs should be back to Q0.7s, and this should not require an integer bit clipping since the 
+//output values should all be less than 1.
+
+
+
+////////////////////////////////////
+// ---- I/O Type Definitions ---- //
+////////////////////////////////////
+
+typedef logic signed [`INTEGER_WIDTH-1:0] INT_T;
 
 typedef INT_T [`MAX_EMBEDDING_DIM] Q_VECTOR_T;
 
