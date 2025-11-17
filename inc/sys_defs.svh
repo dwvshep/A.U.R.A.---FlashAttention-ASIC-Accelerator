@@ -56,11 +56,11 @@
 
 `define INPUT_SIZE 8
 
+`define TWO_PRODUCT_SIZE 1 + 2*(`INPUT_SIZE-1)
+
+`define DOT_PRODUCT_SIZE $clog2(`MAX_EMBEDDING_DIM) + `TWO_PRODUCT_SIZE
+
 `define EXPMUL_OUTPUT_SIZE 30
-
-`define DOT_PRODUCT_SIZE 22
-
-
 
 `define 
 
@@ -128,7 +128,3 @@ typedef enum logic [1:0] {
     MEM_LOAD   = 2'h1,
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
-
-
-
-
