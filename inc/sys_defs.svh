@@ -48,9 +48,21 @@
 
 `define Q_SRAM_DEPTH (`Q_SRAM_BYTES/`Q_SRAM_ROW_BYTES) // Number of full length Q row vectors that can be stored in SRAM
 
+
+
+///////////////////////////////////
+// ---- Bit Width Parameters ---- //
+///////////////////////////////////
+
+`define INPUT_SIZE 8
+
 `define EXPMUL_OUTPUT_SIZE 30
 
 `define DOT_PRODUCT_SIZE 22
+
+
+
+`define 
 
 
 
@@ -116,3 +128,7 @@ typedef enum logic [1:0] {
     MEM_LOAD   = 2'h1,
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
+
+
+
+
