@@ -1,3 +1,5 @@
+//This mem controller assumes full uninterupted access to the memline during processing
+
 module memory_controller #(
     // Addressing: base addresses for K, V, Q inputs and O outputs
     parameter ADDR K_BASE          = 'h0000_1000,
@@ -37,19 +39,26 @@ module memory_controller #(
     // -----------------------------
     // Memory Helper Signals
     // -----------------------------
-    logic waiting_for_mem;
-    MEM_TAG expected_tag;
+    MEM_TAG expected_tag_fifo [`NUM_MEM_TAGS+1];
+    MEM_TAG next_expected_tag_fifo [`NUM_MEM_TAGS+1];
+    logic [$clog2(`NUM_MEM_TAGS+1)-1:0] tag_head, tag_tail;
+    logic tags_empty; //should never be full
+
+    assign tags_empty = (tag_head == tag_tail);
 
     // -----------------------------
     // Vector assembly state
     // -----------------------------
-    logic [$clog2(`MAX_SEQ_LEN)-1:0]           vec_index;     // which vector within the phase
-    logic [$clog2(`MEM_BLOCKS_PER_VECTOR)-1:0] blk_count;     // 0..BLOCKS_PER_VEC
-    logic                                      have_full_vec; // flag: internal buffer contains a complete vector
+    logic [$clog2(`MAX_SEQ_LEN)-1:0]         vec_index, next_vec_index;     // which vector within the phase
+    logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count, next_blk_count;     // 0..BLOCKS_PER_VEC
+    logic                                    have_full_vec; // flag: internal buffer contains a complete vector
 
     // Internal vector buffer
-    Q_VECTOR_T vector_buffer;
-    logic have_full_vec;
+    Q_VECTOR_T vector_buffer, next_vector_buffer;
+    logic buffer_empty;
+
+    assign have_full_vec = (blk_count == `MEM_BLOCKS_PER_VECTOR)
+    assign buffer_empty = (blk_count == 0);
 
     // -----------------------------
     // Phase FSM
@@ -102,6 +111,16 @@ module memory_controller #(
             default: next_phase = PH_RESET;
         endcase
     end
+
+    assign have_full_vec = (blk_count == `MEM_BLOCKS_PER_VECTOR);
+
+    assign ctrl_K_vld = have_full_vec && (phase == PH_LOAD_K);
+    assign ctrl_V_vld = have_full_vec && (phase == PH_LOAD_V);
+    assign ctrl_Q_vld = have_full_vec && (phase == PH_LOAD_Q);
+
+    assign ctrl_O_rdy = buffer_empty && (phase == PH_DRAIN_O);
+
+    assign loaded_vector = vector_buffer;
 
     assign done = (phase == PH_DONE);
 
@@ -159,14 +178,12 @@ module memory_controller #(
             vec_index       <= '0;
             blk_count       <= '0;
             write_index     <= '0;
-            ctrl_Q_vld      <=  0;
-            ctrl_K_vld      <=  0;
-            ctrl_V_vld      <=  0;
-            ctrl_O_rdy      <=  0;
-            waiting_for_mem <= '0;
+            expected_tag    <= '0;
+            tag_head        <= '0;
+            tag_tail        <= '0;
         end else begin
             phase <= next_phase;
-            if(waiting_for_mem && (mem2proc_data_tag == expected_tag)) begin
+            if(!tags_empty && (mem2proc_data_tag == expected_tag)) begin
                 //insert mem2proc_data into vector buffer
                 //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
                 for(int i = 0; i < 8; i++) begin
@@ -179,6 +196,28 @@ module memory_controller #(
                 end
             end
         end
+    end
+
+    always_comb begin
+        next_vector_buffer = vector_buffer;
+        next_vec_index = vec_index;
+        next_blk_count = blk_count;
+        next_write_index = write_index;
+        next_expected_tag_fifo = expected_tag_fifo;
+
+        if(!tags_empty && (mem2proc_data_tag == expected_tag_fifo[head])) begin
+            //insert mem2proc_data into vector buffer
+            //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
+            for(int i = 0; i < 8; i++) begin
+                next_vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
+            end
+            next_write_index = write_index + 8; //Auto wraps
+            next_blk_count = blk_count + 1;
+            if(blk_count == `MEM_BLOCKS_PER_VECTOR - 1) begin
+                next_vec_index = vec_index + 1; //Auto wraps
+            end
+        end
+
     end
 
 
