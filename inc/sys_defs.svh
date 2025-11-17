@@ -226,10 +226,7 @@ typedef  [`MAX_EMBEDDING_DIM+1][`EXPMUL_OUTPUT_SIZE-1:0] STAR_VECTOR_T_OUT; //Ap
 // ---- Memory Definitions ---- //
 //////////////////////////////////
 
-typedef union packed {
-    logic [31:0] addr;
-    //?? other fields as needed
-} ADDR;
+typedef logic [31:0] ADDR;
 
 `define MEM_LATENCY_IN_CYCLES (100.0/`CLOCK_PERIOD+0.49999)
 // the 0.49999 is to force ceiling(100/period). The default behavior for
