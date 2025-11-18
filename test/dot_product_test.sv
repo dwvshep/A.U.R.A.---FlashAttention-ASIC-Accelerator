@@ -91,6 +91,7 @@ module dot_product_tb;
     // TEST PROCESS
     // --------------------------------------------------------
     int pass_count = 0;
+    logic signed [7:0] golden_q;
 
     initial begin : TEST_MAIN
         @(negedge rst);
@@ -112,7 +113,7 @@ module dot_product_tb;
             // Apply the >>> 3 division (divide by sqrt(64)=8)
             golden = golden / 8.0;
 
-            logic signed [7:0] golden_q = real_to_score(golden);
+            golden_q = real_to_score(golden);
 
             // -------------------------------
             // Drive handshake for inputs

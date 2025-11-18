@@ -2,6 +2,8 @@
 //The result is then scaled by dividing by the square root of the matrix dimension
 //If we assume dk = 64, then dividing by root dk is equivalent to >> 3
 
+`include "include/sys_defs.svh"
+
 module dot_product (
     //control signals
     input clk,
@@ -21,7 +23,7 @@ module dot_product (
     input Q_VECTOR_T q_in,
     input K_VECTOR_T k_in,
     input V_VECTOR_T v_in,
-    output SCORE_QT s_out
+    output SCORE_QT s_out,
     output V_VECTOR_T v_out
 );
 
@@ -34,14 +36,14 @@ module dot_product (
     logic valid_v;
     logic [$clog2(`MAX_SEQ_LENGTH)-1:0] row_counter;
 
+    //Internal Handshake signals
+    logic reduction_rdy;
+    logic all_valid;
+
     assign all_valid = valid_q && valid_k && valid_v;
     assign Q_rdy_out = !valid_q || (all_valid && reduction_rdy && (row_counter == 0));
     assign K_rdy_out = !valid_k || (all_valid && reduction_rdy);
     assign V_rdy_out = !valid_v || (all_valid && reduction_rdy);
-
-    //Internal Handshake signals
-    logic reduction_rdy;
-    logic all_valid;
 
     //Internal Data signals
     // logic signed [W_PROD-1:0] products [LEN];
@@ -99,14 +101,16 @@ module dot_product (
     end
 
     //Multiply 
-    for(int i = 0; i < `MAX_EMBEDDING_DIM; i++) begin
-        products[i] = q[i] * k[i];
+    always_comb begin
+        for(int i = 0; i < `MAX_EMBEDDING_DIM; i++) begin
+            products[i] = q[i] * k[i];
+        end
     end
 
     //Tree Reduction
-    tree_reduce tree_inst #(
+    tree_reduce #(
         .STAGES(3)
-    )(
+    ) tree_inst (
         .clk(clk),
         .rst(rst),
 
@@ -117,7 +121,7 @@ module dot_product (
 
         .list_in(products),
         .sum(sum)
-    )
+    );
 
     //scale by root(dk)
     assign s_out = `Q_CONVERT(sum >>> 3, 7, 6, 4, 3);

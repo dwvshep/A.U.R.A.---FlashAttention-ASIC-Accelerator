@@ -66,7 +66,7 @@ ALL_HEADERS = $(AURA_HEADERS)
 
 # TODO: add extra source file dependencies below
 
-DOT_PRODUCT_FILES = inc/sys_defs.svh verilog/tree_reduce.sv verilog/reduction_step.sv
+DOT_PRODUCT_FILES = include/sys_defs.svh verilog/tree_reduce.sv verilog/reduction_step.sv
 build/dot_product.simv: $(DOT_PRODUCT_FILES)
 build/dot_product.cov: $(DOT_PRODUCT_FILES)
 synth/dot_product.vg: $(DOT_PRODUCT_FILES)
@@ -78,7 +78,7 @@ synth/dot_product.vg: $(DOT_PRODUCT_FILES)
 # We also reuse this section to compile the cpu, but not to run it
 # You should still run programs in the same way as project 3
 
-AURA_HEADERS = inc/sys_defs.svh
+AURA_HEADERS = include/sys_defs.svh
 
 # tb/cpu_test.sv is implicit
 AURA_TESTBENCH = tb/mem.sv 

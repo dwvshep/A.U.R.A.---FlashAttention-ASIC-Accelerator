@@ -208,13 +208,13 @@ typedef `Q_TYPE(0, 7) MEM_QT;
 typedef `Q_TYPE(9, 8) EXPMUL_VSHIFT_QT;
 
 // Keep the possible shift exponent rang (-16, 15) this is almost overkill
-typedef `Q_TYPE(4, 0) EXPMUL_EXPONENT_QT
+typedef `Q_TYPE(4, 0) EXPMUL_EXPONENT_QT;
 
 //Since we clip to an int, we only need to keep one fractional bit from the Q6.21
-typedef `Q_TYPE(6, 1) EXPMUL_LOG2E_QT
+typedef `Q_TYPE(6, 1) EXPMUL_LOG2E_QT;
 
 //The same goes for the difference which gets multiplied by 1.43, but we can keep an extra bit for fun (8 bits total)
-typedef `Q_TYPE(5, 2) EXPMUL_DIFF_QT
+typedef `Q_TYPE(5, 2) EXPMUL_DIFF_QT;
 
 //For linear ops like subtraction, just keep adding one more frac bit
 typedef `Q_TYPE(4, 3) SCORE_QT;
