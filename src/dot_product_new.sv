@@ -41,54 +41,6 @@ module dot_product(
     assign K_rdy_out = !valid_k || (all_valid && rdy_in);
     assign V_rdy_out = !valid_v || (all_valid && rdy_in);
 
-    //Latch Q input
-    always_ff @(posedge clk) begin
-        if(rst) begin
-            q <= '0;
-            valid_q <= 1'b0;
-            row_counter <= '0;
-        end else begin
-            if(Q_vld_in && Q_rdy_out) begin //Handshake successful
-                q <= q_in;
-                valid_q <= 1'b1;
-                row_counter <= `MAX_SEQ_LENGTH - 1;
-            end else if(all_valid && rdy_in && (row_counter != 0)) begin
-                row_counter <= row_counter - 1;
-            end else if(all_valid && rdy_in && (row_counter == 0)) begin //Only downstream is ready (clear internal pipeline)
-                valid_q <= 1'b0;
-            end
-        end
-    end
-
-    //Latch K inputs
-    always_ff @(posedge clk) begin
-        if(rst) begin
-            k <= '0;
-            valid_k <= 1'b0;
-        end else begin
-            if(K_vld_in && K_rdy_out) begin //Handshake successful
-                k <= k_in;
-                valid_k <= 1'b1;
-            end else if(all_valid && rdy_in) begin //Only downstream is ready (clear internal pipeline)
-                valid_k <= 1'b0;
-            end
-        end
-    end
-
-    //Latch V inputs
-    always_ff @(posedge clk) begin
-        if(rst) begin
-            v <= '0;
-            valid_v <= 1'b0;
-        end else begin
-            if(V_vld_in && V_rdy_out) begin //Handshake successful
-                v <= v_in;
-                valid_v <= 1'b1;
-            end else if(all_valid && rdy_in) begin //Only downstream is ready (clear internal pipeline)
-                valid_v <= 1'b0;
-            end
-        end
-    end
 
     //Partial sum is registered, final outputs are combinational
     assign v_out = v;

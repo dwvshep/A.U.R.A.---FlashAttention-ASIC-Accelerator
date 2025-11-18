@@ -1,6 +1,9 @@
-//This module computes the maximum between the current score and the previous maximum score
+//This module computes the product of two inputs
 
-module max(
+module multiply #(
+    parameter int W_IN     = 8,              // width of each input operand
+    parameter int W_OUT    = 2*W_IN           // width of product
+)(
     //control signals
     input clk,
     input rst,
@@ -12,19 +15,13 @@ module max(
     output rdy_out,
 
     //Data signals
-    input SCORE_QT s_in,
-    input SCORE_QT m_prev_in,
-    input V_VECTOR_T v_in,
-    output SCORE_QT m_out,
-    output SCORE_QT s_out,
-    output SCORE_QT m_prev_out,
-    output V_VECTOR_T v_out
+    input  logic signed  [W_IN-1:0] a_in,
+    input  logic signed  [W_IN-1:0] b_in,
+    output logic signed [W_OUT-1:0] product
 );
 
     //Internal Pipeline Registers
-    SCORE_QT s;
-    SCORE_QT m_prev;
-    V_VECTOR_T v;
+    logic signed [W_IN-1:0] a, b;
     logic valid_reg;
 
     assign vld_out = valid_reg;
@@ -33,15 +30,13 @@ module max(
     //Latch inputs first
     always_ff @(posedge clk) begin
         if(rst) begin
-            s <= '0;
-            m_prev <= '0;
-            v <= '0;
+            a <= '0;
+            b <= '0
             valid_reg <= 1'b0;
         end else begin
             if(vld_in && rdy_out) begin //Handshake successful
-                s <= s_in;
-                m_prev <= m_prev_in;
-                v <= v_in;
+                a <= a_in;
+                b <= b_in;
                 valid_reg <= 1'b1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
                 valid_reg <= 1'b0;
@@ -50,11 +45,6 @@ module max(
     end
 
     //outputs are combinational
-    always_comb begin
-        m_out = (s > m_prev) ? s : m_prev;
-        s_out = s;
-        m_prev_out = m_prev;
-        v_out = v;
-    end
+    assign product = a * b;
 
 endmodule

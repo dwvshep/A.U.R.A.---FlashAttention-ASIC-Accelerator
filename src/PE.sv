@@ -25,10 +25,10 @@ module PE(
     V_VECTOR_T v_vector_delayed;
     V_VECTOR_T v_vector_double_delayed;
     STAR_VECTOR_T v_star;
-    INT_T score;
-    INT_T score_delayed;
-    INT_T max_score;
-    INT_T max_score_prev;
+    SCORE_QT score;
+    SCORE_QT score_delayed;
+    SCORE_QT max_score;
+    SCORE_QT max_score_prev;
     STAR_VECTOR_T exp_o_vector;
     STAR_VECTOR_T exp_v_vector;
     STAR_VECTOR_T output_vector;
@@ -46,9 +46,13 @@ module PE(
     logic vec_add_ready;
     logic vector_division_ready;
 
-    //Generate v_star by appending 1 to v_vector_double_delayed
-    assign v_star[1:`MAX_EMBEDDING_DIM] = v_vector_double_delayed;
-    assign v_star[0] = 1;
+    //Generate v_star by appending 1 to v_vector_double_delayed and converting to Q9.8
+    always_comb begin
+        v_star[0] = 1;
+        for(int i = 1; i <= `MAX_EMBEDDING_DIM) begin
+            v_star[i] = `Q_CONVERT(v_vector_double_delayed[i], 0, 7, 9, 8);
+        end
+    end
 
     //Internal Data Flow Modules
     dot_product dot_product_inst (
