@@ -15,7 +15,7 @@ VCS_BAD_WARNINGS = +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLC
 LIB = /afs/umich.edu/class/eecs470/lib/verilog/lec25dscc25.v
 
 # the EECS 470 synthesis script
-TCL_SCRIPT = synth/470synth.tcl
+TCL_SCRIPT = synth/AURAsynth.tcl
 
 # Set the shell's pipefail option: causes return values through pipes to match the last non-zero value
 # (useful for, i.e. piping to `tee`)
@@ -66,7 +66,7 @@ ALL_HEADERS = $(AURA_HEADERS)
 
 # TODO: add extra source file dependencies below
 
-DOT_PRODUCT_FILES = inc/sys_defs.svh src/tree_reduce.sv src/reduction_step.sv
+DOT_PRODUCT_FILES = inc/sys_defs.svh verilog/tree_reduce.sv verilog/reduction_step.sv
 build/dot_product.simv: $(DOT_PRODUCT_FILES)
 build/dot_product.cov: $(DOT_PRODUCT_FILES)
 synth/dot_product.vg: $(DOT_PRODUCT_FILES)
@@ -84,21 +84,21 @@ AURA_HEADERS = inc/sys_defs.svh
 AURA_TESTBENCH = tb/mem.sv 
 
 # verilog/cpu.sv is implicit
-AURA_SOURCES = src/AURA.sv \
-		       src/dot_product.sv \
-			   src/expmul_stage.sv \
-			   src/expmul.sv \
-			   src/KSRAM.sv \
-			   src/max.sv \
-			   src/memory_controller.sv \
-			   src/OSRAM.sv \
-		       src/PE.sv \
-			   src/QSRAM.sv \
-			   src/reduction_step.sv \
-		       src/tree_reduce.sv \
-			   src/vec_add.sv \
-			   src/vector_division.sv \
-		       src/VSRAM.sv \
+AURA_SOURCES = verilog/AURA.sv \
+		       verilog/dot_product.sv \
+			   verilog/expmul_stage.sv \
+			   verilog/expmul.sv \
+			   verilog/KSRAM.sv \
+			   verilog/max.sv \
+			   verilog/memory_controller.sv \
+			   verilog/OSRAM.sv \
+		       verilog/PE.sv \
+			   verilog/QSRAM.sv \
+			   verilog/reduction_step.sv \
+		       verilog/tree_reduce.sv \
+			   verilog/vec_add.sv \
+			   verilog/vector_division.sv \
+		       verilog/VSRAM.sv \
 			  
 build/aura.simv: $(AURA_SOURCES) $(AURA_HEADERS) $(AURA_TESTBENCH)
 synth/aura.vg: $(AURA_SOURCES) $(AURA_HEADERS)
