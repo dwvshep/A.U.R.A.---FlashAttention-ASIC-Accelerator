@@ -1,5 +1,5 @@
 # this is a global clock period variable used in the tcl script and referenced in testbenches
-export CLOCK_PERIOD = 7.85
+export CLOCK_PERIOD = 10
 
 # the Verilog Compiler command and arguments
 VCS =  vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
@@ -175,23 +175,162 @@ $(MODULES:%=build/%.syn.simv): build/%.syn.simv: test/%_test.sv synth/%.vg | bui
 	@$(call PRINT_COLOR, 6, finished compiling $@)
 
 
-CXX = g++
-CXXFLAGS = -O2 -Wall
+##############################
+# ---- Coverage targets ---- #
+##############################
 
-TARGET = gen_qkv_mem
-SRC = gen_qkv_mem.cpp
+# This section adds targets to run module testbenches with coverage output
 
-MEM_FILES = Q.mem K.mem V.mem
+# Additional VCS argument for both building and running with coverage output
+VCS_COVG = -cm line+tgl+cond+branch
 
-all: run
+$(MODULES:%=build/%.cov.simv): build/%.cov.simv: test/%_test.sv verilog/%.sv | build
+	@$(call PRINT_COLOR, 5, compiling the coverage executable $@)
+	@$(call PRINT_COLOR, 3, NOTE: if this is slow to startup: run '"module load vcs verdi synopsys-synth"')
+	$(VCS) $(VCS_COVG) $(filter-out $(ALL_HEADERS),$^) -o $@
+	@$(call PRINT_COLOR, 6, finished compiling $@)
 
-$(TARGET): tb/$(SRC)
-	$(CXX) $(CXXFLAGS) -o tb/$(TARGET) tb/$(SRC)
+# Run the testbench to produce a *.vdb directory with coverage info
+$(MODULES:%=build/%.cov.simv.out): %.cov.simv.out: %.cov.simv | build
+	@$(call PRINT_COLOR, 5, running $<)
+	cd build && ./$(<F) $(VCS_COVG) | tee $(@F)
+	@$(call PRINT_COLOR, 2, created coverage dir $<.vdb and saved output to $@)
 
-run: $(TARGET)
-	./$(TARGET)
+# A layer of indirection for the coverage output dir
+build/%.cov.simv.vdb: build/%.cov.simv.out ;
 
-clean:
-	rm -f tb/$(TARGET) output/$(MEM_FILES)
+# Use urg to generate human-readable reports in text mode (alternative is html)
+$(MODULES:%=cov_report_%): cov_report_%: build/%.cov.simv.vdb
+	@$(call PRINT_COLOR, 5, outputting coverage report in $@)
+	module load vcs && cd build && urg -format text -dir $*.cov.simv.vdb -report ../$@
+	@$(call PRINT_COLOR, 2, coverage report is in $@)
+
+# view the coverage hierarchy report
+$(MODULES:=.cov): %.cov: cov_report_%
+	@$(call PRINT_COLOR, 2, printing coverage hierarchy - open '$<' for more)
+	cat $</hierarchy.txt
+
+# open the coverage info in verdi
+$(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
+	@$(call PRINT_COLOR, 5, running verdi for $* coverage)
+	cd build && ./$(<F) $(RUN_VERDI) -cov -covdir $(<F).vdb
+	./$< $(RUN_VERDI) -cov -covdir $<.vdb
+
+.PHONY: %.cov %.cov.verdi
+
+
+####################################
+# ---- Executable Compilation ---- #
+####################################
+
+########################################
+# ---- Program Memory Compilation ---- #
+########################################
+
+#FILL IN THIS SECTION WITH OUR MEM GENERATOR SCRIPTS
+
+
+###############################
+# ---- Program Execution ---- #
+###############################
+
+#GOTTA FIGURE THIS ONE OUT
+
+################################
+# ---- Output Directories ---- #
+################################
+
+# Directories for holding build files or run outputs
+# Targets that need these directories should add them after a pipe.
+# ex: "target: dep1 dep2 ... | build"
+build synth output programs/mem:
+	mkdir -p $@
+# Don't leave any files in these, they will be deleted by clean commands
+
+#####################
+# ---- Cleanup ---- #
+#####################
+
+# You should only clean your directory if you think something has built incorrectly
+# or you want to prepare a clean directory for e.g. git (first check your .gitignore).
+# Please avoid cleaning before every build. The point of a makefile is to
+# automatically determine which targets have dependencies that are modified,
+# and to re-build only those as needed; avoiding re-building everything everytime.
+
+# 'make clean' removes build/output files, 'make nuke' removes all generated files
+# 'make clean' does not remove .mem or .dump files
+# clean_* commands remove certain groups of files
+
+clean: clean_exe clean_run_files
+	@$(call PRINT_COLOR, 6, note: clean is split into multiple commands you can call separately: $^)
+
+# removes all extra synthesis files and the entire output directory
+# use cautiously, this can cause hours of recompiling in project 4
+nuke: clean clean_output clean_synth clean_programs
+	@$(call PRINT_COLOR, 6, note: nuke is split into multiple commands you can call separately: $^)
+
+clean_exe:
+	@$(call PRINT_COLOR, 3, removing compiled executable files)
+	rm -rf build/                         # remove the entire 'build' folder
+	rm -rf *simv *.daidir csrc *.key      # created by simv/syn_simv/vis_simv
+	rm -rf vcdplus.vpd vc_hdrs.h          # created by simv/syn_simv/vis_simv
+	rm -rf unifiedInference.log xprop.log # created by simv/syn_simv/vis_simv
+	rm -rf *.cov cov_report_* cm.log      # coverage files
+	rm -rf verdi* novas* *fsdb*           # verdi files
+	rm -rf dve* inter.vpd DVEfiles        # old DVE debugger
+
+clean_run_files:
+	@$(call PRINT_COLOR, 3, removing per-run outputs)
+	rm -rf output/*.out output/*.cpi output/*.wb output/*.log
+
+clean_synth:
+	@$(call PRINT_COLOR, 1, removing synthesis files)
+	cd synth && rm -rf *.vg *_svsim.sv *.res *.rep *.ddc *.chk *.syn *.out *.db *.svf *.mr *.pvl command.log
+
+clean_output:
+	@$(call PRINT_COLOR, 1, removing entire output directory)
+	rm -rf output/
+
+clean_programs:
+	@$(call PRINT_COLOR, 3, removing program memory files)
+	rm -rf programs/*.mem
+	@$(call PRINT_COLOR, 3, removing dump files)
+	rm -rf programs/*.dump*
+
+.PHONY: clean nuke clean_%
+
+######################
+# ---- Printing ---- #
+######################
+
+# this is a GNU Make function with two arguments: PRINT_COLOR(color: number, msg: string)
+# it does all the color printing throughout the makefile
+PRINT_COLOR = if [ -t 0 ]; then tput setaf $(1) ; fi; echo $(2); if [ -t 0 ]; then tput sgr0; fi
+# colors: 0:black, 1:red, 2:green, 3:yellow, 4:blue, 5:magenta, 6:cyan, 7:white
+# other numbers are valid, but aren't specified in the tput man page
+
+# Make functions are called like this:
+# $(call PRINT_COLOR,3,Hello World!)
+# NOTE: adding '@' to the start of a line avoids printing the command itself, only the output
+
+
+# CXX = g++
+# CXXFLAGS = -O2 -Wall
+
+# TARGET = gen_qkv_mem
+# SRC = gen_qkv_mem.cpp
+
+# MEM_FILES = Q.mem K.mem V.mem
+
+# all: run
+
+# $(TARGET): tb/$(SRC)
+# 	$(CXX) $(CXXFLAGS) -o tb/$(TARGET) tb/$(SRC)
+
+# run: $(TARGET)
+# 	./$(TARGET)
+
+# clean:
+# 	rm -f tb/$(TARGET) output/$(MEM_FILES)
 
 
