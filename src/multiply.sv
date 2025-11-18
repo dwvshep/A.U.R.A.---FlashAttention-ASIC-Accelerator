@@ -1,7 +1,7 @@
 //This module computes the product of two inputs
 
 module multiply #(
-    parameter int W_IN     = 8,              // width of each input operand
+    parameter int W_IN     = `INTEGER_WIDTH,              // width of each input operand
     parameter int W_OUT    = 2*W_IN           // width of product
 )(
     //control signals
