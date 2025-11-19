@@ -2,7 +2,7 @@
 //Assumes LEN is a power of 2
 //STAGES must divide evenly into $clog2(LEN)
 
-module tree_reduce #(
+module tree_reduce import sys_defs_pkg::*; #(
     parameter int LEN      = `MAX_EMBEDDING_DIM,
     parameter int W_IN     = 2*`INTEGER_WIDTH,  // width of each input operand
     parameter int W_OUT    = W_IN + $clog2(LEN),    // width of sum

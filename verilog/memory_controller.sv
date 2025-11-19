@@ -1,11 +1,13 @@
 //This mem controller assumes full uninterupted access to the memline during processing
 
-module memory_controller #(
+
+
+module memory_controller import sys_defs_pkg::*; #(
     // Addressing: base addresses for K, V, Q inputs and O outputs
-    parameter ADDR K_BASE          = 'h0000_1000,
-    parameter ADDR V_BASE          = 'h0000_2000,
-    parameter ADDR Q_BASE          = 'h0000_3000,
-    parameter ADDR O_BASE          = 'h0000_4000,
+    parameter ADDR K_BASE          = K_BASE,
+    parameter ADDR V_BASE          = V_BASE,
+    parameter ADDR Q_BASE          = Q_BASE,
+    parameter ADDR O_BASE          = O_BASE,
     parameter int  VECTOR_BYTES    = (`MEM_BLOCKS_PER_VECTOR*8)
 )(
     input clk,

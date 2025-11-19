@@ -3,7 +3,7 @@ export CLOCK_PERIOD = 10
 
 # the Verilog Compiler command and arguments
 VCS =  vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
-      -debug_access+all+reverse $(VCS_BAD_WARNINGS) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) +incdir+verilog/
+      -debug_access+all+reverse $(VCS_BAD_WARNINGS) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) +incdir+verilog/ +incdir+include/
 # a SYNTH define is added when compiling for synthesis that can be used in testbenches
 
 RUN_VERDI = -gui=verdi -verdi_opts "-ultra"
@@ -59,14 +59,14 @@ SHELL := $(SHELL) -o pipefail
 
 # ---- Modules to Test ---- #
 
-MODULES = dot_product
+MODULES = dot_product tree_reduce reduction_step
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(AURA_HEADERS)
 
 # TODO: add extra source file dependencies below
 
-DOT_PRODUCT_FILES = include/sys_defs.svh verilog/tree_reduce.sv verilog/reduction_step.sv
+DOT_PRODUCT_FILES = verilog/tree_reduce.sv verilog/reduction_step.sv
 build/dot_product.simv: $(DOT_PRODUCT_FILES)
 build/dot_product.cov: $(DOT_PRODUCT_FILES)
 synth/dot_product.vg: $(DOT_PRODUCT_FILES)
@@ -78,7 +78,9 @@ synth/dot_product.vg: $(DOT_PRODUCT_FILES)
 # We also reuse this section to compile the cpu, but not to run it
 # You should still run programs in the same way as project 3
 
-AURA_HEADERS = include/sys_defs.svh
+AURA_HEADERS = 
+
+AURA_PACKAGES = include/sys_defs_pkg.sv
 
 # tb/cpu_test.sv is implicit
 AURA_TESTBENCH = tb/mem.sv 
@@ -100,8 +102,8 @@ AURA_SOURCES = verilog/AURA.sv \
 			   verilog/vector_division.sv \
 		       verilog/VSRAM.sv \
 			  
-build/aura.simv: $(AURA_SOURCES) $(AURA_HEADERS) $(AURA_TESTBENCH)
-synth/aura.vg: $(AURA_SOURCES) $(AURA_HEADERS)
+build/aura.simv: $(AURA_HEADERS) $(AURA_SOURCES) $(AURA_TESTBENCH)
+synth/aura.vg: $(AURA_HEADERS) $(AURA_SOURCES)
 build/aura.syn.simv: $(AURA_TESTBENCH)
 # Don't need coverage for the CPU
 
@@ -151,7 +153,7 @@ $(MODULES:%=./%.out) $(MODULES:%=./%.syn.out): ./%.out: build/%.out
 # The normal simulation executable will run your testbench on simulated modules
 $(MODULES:%=build/%.simv): build/%.simv: test/%_test.sv verilog/%.sv | build
 	@$(call PRINT_COLOR, 5, compiling the simulation executable $@)
-	$(VCS) $(filter-out $(ALL_HEADERS),$^) -o $@
+	$(VCS) $(AURA_PACKAGES) $(filter-out $(ALL_HEADERS),$^) -o $@
 	@$(call PRINT_COLOR, 6, finished compiling $@)
 
 # This also generates many other files, see the tcl script's introduction for info on each of them

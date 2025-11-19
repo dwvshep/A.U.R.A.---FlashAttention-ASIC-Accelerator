@@ -7,12 +7,14 @@
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
 
-`ifndef __SYS_DEFS_SVH__
-`define __SYS_DEFS_SVH__
+package sys_defs_pkg;
+
+//`ifndef __SYS_DEFS_SVH__
+//`define __SYS_DEFS_SVH__
 
 
 // all files should `include "sys_defs.svh" to at least define the timescale
-`timescale 1ns/100ps
+//`timescale 1ns/100ps
 
 
 ///////////////////////////////////
@@ -81,75 +83,148 @@
 // Returns min signed value of width W
 `define MIN_SIGNED(W)  $signed( 1 << ((W)-1) )
 
-// ----------------------------------------------------------
-// Q_ALIGN_FRAC(x, IN_W, IN_F, OUT_F)
-//
-// Aligns fixed-point number x from Q(*, IN_F) to Q(*, OUT_F)
-// - x      : signed value [IN_W-1:0]
-// - IN_W   : original bit width of x
-// - IN_F   : original fractional bits
-// - OUT_F  : target fractional bits
-//
-// Behavior:
-//   * If OUT_F > IN_F: left shift (increase fraction bits), widen first
-//   * If OUT_F < IN_F: arithmetic right shift (reduce fraction bits)
-//   * If equal: pass-through
-// Result is a SIGNED value, width >= IN_W
-// ----------------------------------------------------------
-`define Q_ALIGN_FRAC(x, IN_W, IN_F, OUT_F)                              \
-    (                                                                   \
-        /* More fractional bits in target: widen, then left shift */    \
-        ((OUT_F) > (IN_F)) ?                                            \
-            $signed({ {((OUT_F)-(IN_F)){ (x)[(IN_W)-1]}}, (x) }) <<<    \
-                     ((OUT_F)-(IN_F)) :                                 \
-        /* Fewer fractional bits in target: arithmetic right shift */   \
-        ((OUT_F) < (IN_F)) ?                                            \
-            $signed(x) >>> ((IN_F)-(OUT_F)) :                           \
-        /* Same F: no change */                                         \
-            $signed(x)                                                  \
-    )
 
-// `define Q_ALIGN_FRAC(x, IN_W, IN_F, OUT_F) \
-// ( \
-//     ((OUT_F) == (IN_F)) ? \
-//         $signed(x) : \
-//     ((OUT_F) > (IN_F)) ? \
-//         /* OUT_F > IN_F: LEFT SHIFT by positive amount */ \
-//         ($signed({ {(OUT_F-IN_F){x[IN_W-1]}}, x }) <<< (OUT_F-IN_F)) : \
-//         /* OUT_F < IN_F: RIGHT SHIFT */ \
-//         ($signed(x) >>> (IN_F-OUT_F)) \
-// )
+// ------------------------------------------------------------
+// SIGN EXTENSION to arbitrary width
+// ------------------------------------------------------------
+function automatic logic signed [W_OUT-1:0]
+q_sign_extend (
+    input int W_IN, 
+    input int W_OUT,
+    input logic signed [W_IN-1:0] x
+);
+    begin
+        q_sign_extend = {{(W_OUT-W_IN){x[W_IN-1]}}, x};
+    end
+endfunction
 
 
-// -------------------------------------------------------------
-// Q_CONVERT(x, IN_W, IN_F, OUT_I, OUT_F)
+// ------------------------------------------------------------
+// SATURATE an arbitrary-width signed number to a smaller width
+// ------------------------------------------------------------
+function automatic logic signed [W_OUT-1:0]
+q_saturate (
+    input int W_OUT, 
+    input int W_IN,
+    input logic signed [W_IN-1:0] x
+);
+    localparam logic signed [W_OUT-1:0] MAXV = {1'b0, {(W_OUT-1){1'b1}}};
+    localparam logic signed [W_OUT-1:0] MINV = {1'b1, {(W_OUT-1){1'b0}}};
+
+    begin
+        if (x > MAXV)
+            q_saturate = MAXV;
+        else if (x < MINV)
+            q_saturate = MINV;
+        else
+            q_saturate = x[W_OUT-1:0];  // truncation is safe
+    end
+endfunction
+
+
+// ------------------------------------------------------------
+// FRACTIONAL ALIGNMENT: convert Q(IN_I).(IN_F) → Q(IN_I).(OUT_F)
+// Does safe left or right shifts.
+// ------------------------------------------------------------
+function automatic logic signed [W_OUT-1:0]
+q_align_frac (
+    input int IN_I, 
+    input int IN_F,
+    input int OUT_F,
+    input logic signed [W_IN-1:0] x
+);
+    localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
+    localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F);
+
+    logic signed [W_OUT-1:0] temp;
+
+    begin
+        // Same number of fractional bits → sign extend only
+        if (OUT_F == IN_F) begin
+            temp = x;
+
+        // Need MORE fractional bits → LEFT SHIFT
+        end else if (OUT_F > IN_F) begin
+            temp = {x, {(OUT_F-IN_F){1'b0}}};
+
+        // Need FEWER fractional bits → RIGHT SHIFT
+        end else begin // OUT_F < IN_F
+            temp = (x >>> (IN_F-OUT_F));
+        end
+
+        q_align_frac = temp;
+    end
+endfunction
+
+// ------------------------------------------------------------
+// INTEGER ALIGNMENT: convert Q(IN_I).(IN_F) → Q(IN_I).(OUT_F)
+// Does safe left or right shifts.
+// ------------------------------------------------------------
+function automatic logic signed [W_OUT-1:0]
+q_align_int (
+    input int IN_I, 
+    input int IN_F,
+    input int OUT_I, 
+    input int OUT_F,
+    input logic signed [W_IN-1:0] x
+);
+    localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
+    localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F);
+
+    logic signed [W_OUT-1:0] temp;
+
+    begin
+        // Same number of fractional bits → sign extend only
+        if (IN_T == OUT_I) begin
+            temp = x;
+
+        // Need MORE fractional bits → LEFT SHIFT
+        end else if (IN_I > OUT_I) begin
+            temp = q_saturate  #(W_OUT, W_IN)(x);
+
+        // Need FEWER fractional bits → RIGHT SHIFT
+        end else begin // OUT_F < IN_F
+            temp = q_sign_extend(x, W_IN, W_OUT)
+        end
+
+        q_align_int = temp;
+    end
+endfunction
+
+
+// ------------------------------------------------------------
+// FULL Q FORMAT CONVERSION:
 //
-// General Q-format conversion:
-//   Input:  x as signed Q(IN_I, IN_F)
-//   Output: signed Q(OUT_I, OUT_F)
+//    Input  : Q(IN_I).IN_F   (stored in x)
+//    Output : Q(OUT_I).OUT_F
 //
 // Steps:
-//   1. Fractional alignment: Q(*,IN_F) -> Q(*,OUT_F)
-//   2. Saturate to OUT_W-bit signed range
-//   3. Narrow to exactly OUT_W bits
-//
-// NOTE:
-//   - If OUT_W represents a *wider* integer range than the aligned value,
-//     no saturation will trigger; the slice behaves like a sign-preserving
-//     narrowing (or you can assign to a wider signal to get sign extension).
-// -------------------------------------------------------------
-`define Q_CONVERT(x, IN_I, IN_F, OUT_I, OUT_F)                                                                          \
-    (                                                                                                                   \                                                                     
-        (                                                                                                               \
-            (                                                                                                           \
-                ( `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F) > `MAX_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) ) ?         \
-                    `MAX_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) :                                                               \
-                ( `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F) < `MIN_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) ) ?         \
-                    `MIN_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) :                                                               \
-                    `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F)                                                 \
-            )                                                                                                           \
-        )[`Q_WIDTH(OUT_I, OUT_F)-1:0]                                                                                   \
-    )
+//   1. Align fractional bits (shifts)
+//   2. Saturate to target width
+//   3. Return clipped result
+// ------------------------------------------------------------
+function automatic logic signed [W_OUT-1:0]
+q_convert (
+    input int IN_I, 
+    input int IN_F,
+    input int OUT_I, 
+    input int OUT_F,
+    input logic signed [W_IN-1:0] x
+);
+
+    localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
+    localparam int W_MID = `Q_WIDTH(IN_I, OUT_F);
+    localparam int W_OUT = `Q_WIDTH(OUT_I, OUT_F);
+
+    logic signed [W_MID-1:0] frac_aligned;
+    logic signed [W_OUT-1:0] int_aligned;
+
+    begin
+        frac_aligned   = q_align_frac #(IN_I, IN_F, OUT_F)(x);
+        int_aligned    = q_align_int #(IN_I, OUT_I)(frac_aligned);
+        q_convert = int_aligned;
+    end
+endfunction
 
 
 
@@ -216,7 +291,7 @@ typedef `Q_TYPE(0, 7) MEM_QT;
 //Since we know the denominator should be at least 1, 
 //Chat math says we should only need one extra fractional bit in the
 //numerator and denominator to prevent and errors in the output Q0.7
-typedef `Q_TYPE(9, 7) EXPMUL_VSHIFT_QT;
+typedef `Q_TYPE(9, 8) EXPMUL_VSHIFT_QT;
 
 // Keep the possible shift exponent rang (-16, 15) this is almost overkill
 typedef `Q_TYPE(4, 0) EXPMUL_EXPONENT_QT;
@@ -262,6 +337,12 @@ typedef EXPMUL_VSHIFT_QT [`MAX_EMBEDDING_DIM+1] STAR_VECTOR_T;
 
 typedef logic [31:0] ADDR;
 
+//Base Addresses
+parameter ADDR K_BASE = 'h0000_1000;
+parameter ADDR V_BASE = 'h0000_2000;
+parameter ADDR Q_BASE = 'h0000_3000;
+parameter ADDR O_BASE = 'h0000_4000;
+
 `define MEM_LATENCY_IN_CYCLES (100.0/`CLOCK_PERIOD+0.49999)
 // the 0.49999 is to force ceiling(100/period). The default behavior for
 // float to integer conversion is rounding to nearest
@@ -298,3 +379,5 @@ typedef enum logic [1:0] {
     MEM_LOAD   = 2'h1,
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
+
+endpackage

@@ -94,8 +94,8 @@ package math_utils_pkg;
     // ------------------------------------------------------------
     function automatic logic signed [W_OUT-1:0]
     q_align_int #(
-        int IN_I,
-        int OUT_I
+        int IN_I, int IN_F
+        int OUT_I, int OUT_F
     )
     (
         input logic signed [W_IN-1:0] x
@@ -116,7 +116,7 @@ package math_utils_pkg;
 
             // Need FEWER fractional bits → RIGHT SHIFT
             end else begin // OUT_F < IN_F
-                temp = (x >>> (IN_F-OUT_F));
+                temp = q_sign_extend(x, W_IN, W_OUT)
             end
 
             q_align_int = temp;

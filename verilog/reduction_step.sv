@@ -1,6 +1,6 @@
 //This module computes the sum of a list of inputs in a tree-like fashion
 
-module reduction_step #(
+module reduction_step import sys_defs_pkg::*; #(
     parameter int INPUT_LEN      = `MAX_EMBEDDING_DIM,
     parameter int W_IN           = 2*`INTEGER_WIDTH,  // width of each input operand
     parameter int STEPS          = 1,
