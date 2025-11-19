@@ -49,6 +49,7 @@ module dot_product (
     // logic signed [W_PROD-1:0] products [LEN];
     // logic signed [W_SUM-1:0]  sum;
     PRODUCT_QT products [`MAX_EMBEDDING_DIM];
+    INTERMEDIATE_PRODUCT_QT intermediate_products [`MAX_EMBEDDING_DIM];
     DOT_QT sum, shifted_sum;
 
     //Latch Q input
@@ -100,12 +101,22 @@ module dot_product (
         end
     end
 
-    //Multiply 
+    //Multiply - Intermediate Full Width Results
     always_comb begin
         for(int i = 0; i < `MAX_EMBEDDING_DIM; i++) begin
-            products[i] = q[i] * k[i];
+            intermediate_products[i] = q[i] * k[i];
         end
     end
+
+    //
+    generate
+        for(genvar p = 0; p < `MAX_EMBEDDING_DIM; p++) begin
+            q_convert #(.IN_I(1), .IN_F(14), .OUT_I(1), .OUT_F(6)) prod_conv_inst (
+                .in(intermediate_products[p]),
+                .out(products[p])
+            );
+        end
+    endgenerate
 
     //Tree Reduction
     tree_reduce #(
@@ -125,7 +136,7 @@ module dot_product (
 
     //scale by root(dk)
     assign shifted_sum = sum >>> 3;
-    q_convert #(.IN_I(7), .IN_F(6), .OUT_I(4), .OUT_F(3)) conv_inst (
+    q_convert #(.IN_I(7), .IN_F(6), .OUT_I(4), .OUT_F(3)) scale_conv_inst (
         .in(shifted_sum),
         .out(s_out)
     );

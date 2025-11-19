@@ -313,6 +313,9 @@ typedef `Q_TYPE(4, 6) PARTIAL_DOT_QT;
 //Since the above output comes from an essential shift by 6 we can say:
 typedef `Q_TYPE(1, 6) PRODUCT_QT;
 
+//Interemediate result for products
+typedef `Q_TYPE(1, 14) INTERMEDIATE_PRODUCT_QT;
+
 
 ////////////////////////////////////
 // ---- I/O Type Definitions ---- //

@@ -5,8 +5,9 @@ module dot_product_tb;
     // --------------------------------------------------------
     // Parameters
     // --------------------------------------------------------
-    localparam int DIM = 64;
-    localparam int ELEM_W = 8;   // Q0.7
+    
+    localparam int DIM = `MAX_EMBEDDING_DIM;
+    localparam int ELEM_W = `INTEGER_WIDTH;   // Q0.7
     localparam int SCORE_W = 8;  // your output width
     localparam int NUM_TESTS = 50;
 
@@ -19,9 +20,13 @@ module dot_product_tb;
     logic vld_out;
     logic Q_rdy_out, K_rdy_out;
 
-    logic signed [ELEM_W-1:0] q_in [DIM];
-    logic signed [ELEM_W-1:0] k_in [DIM];
-    logic signed [SCORE_W-1:0] s_out;
+    // logic signed [ELEM_W-1:0] q_in [DIM];
+    // logic signed [ELEM_W-1:0] k_in [DIM];
+    // logic signed [SCORE_W-1:0] s_out;
+    Q_VECTOR_T q_in;
+    K_VECTOR_T k_in;
+    SCORE_QT s_out;
+    
 
     // --------------------------------------------------------
     // Instantiate DUT
@@ -32,15 +37,18 @@ module dot_product_tb;
 
         .Q_vld_in(Q_vld_in),
         .K_vld_in(K_vld_in),
+        .V_vld_in(1'b1),
         .rdy_in(rdy_in),
-
         .vld_out(vld_out),
         .Q_rdy_out(Q_rdy_out),
         .K_rdy_out(K_rdy_out),
+        .V_rdy_out(),
 
         .q_in(q_in),
         .k_in(k_in),
-        .s_out(s_out)
+        .v_in('0),
+        .s_out(s_out),
+        .v_out()
     );
 
     // --------------------------------------------------------

@@ -13,20 +13,38 @@ module q_align_frac #(
     
     logic signed [W_OUT-1:0] temp;
 
-    always_comb begin
+    // always_comb begin
+    //     // Same number of fractional bits → sign extend only
+    //     if (OUT_F == IN_F) begin
+    //         temp = in;
+
+    //     // Need MORE fractional bits → LEFT SHIFT
+    //     end else if (OUT_F > IN_F) begin
+    //         temp = {in, {(OUT_F-IN_F){1'b0}}};
+
+    //     // Need FEWER fractional bits → RIGHT SHIFT
+    //     end else begin // OUT_F < IN_F
+    //         temp = (in >>> (IN_F-OUT_F));
+    //     end
+
+    //     out = temp;
+    // end
+
+    generate 
         // Same number of fractional bits → sign extend only
         if (OUT_F == IN_F) begin
-            temp = in;
+            assign temp = in;
 
-        // Need MORE fractional bits → LEFT SHIFT
+        // Need MORE fractional bits → LEFT SHIFT AND PAD
         end else if (OUT_F > IN_F) begin
-            temp = {in, {(OUT_F-IN_F){1'b0}}};
+            assign temp = {in, {(OUT_F-IN_F){1'b0}}};
 
         // Need FEWER fractional bits → RIGHT SHIFT
         end else begin // OUT_F < IN_F
-            temp = (in >>> (IN_F-OUT_F));
+            assign temp = (in >>> (IN_F-OUT_F));
         end
+    endgenerate
 
-        out = temp;
-    end
+    assign out = temp;
+
 endmodule

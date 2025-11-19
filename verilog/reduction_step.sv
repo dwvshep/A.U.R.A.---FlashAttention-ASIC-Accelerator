@@ -34,11 +34,17 @@ module reduction_step #(
     //Latch inputs first
     always_ff @(posedge clk) begin
         if(rst) begin
-            list <= '0;
+            //list <= '0;
+            for (int i = 0; i < INPUT_LEN; i++) begin
+                list[i] <= '0;
+            end
             valid_reg <= 1'b0;
         end else begin
             if(vld_in && rdy_out) begin //Handshake successful
-                list <= list_in;
+                //list <= list_in;
+                for (int i = 0; i < INPUT_LEN; i++) begin
+                    list[i] <= list_in[i];
+                end
                 valid_reg <= 1'b1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
                 valid_reg <= 1'b0;

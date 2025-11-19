@@ -20,7 +20,7 @@ module q_convert #(
         .in(in),
         .out(frac_aligned)
     );
-    q_align_int #(.IN_I(IN_I), .IN_F(IN_F), .OUT_I(OUT_I), .OUT_F(OUT_F)) int_inst (
+    q_align_int #(.IN_I(IN_I), .IN_F(OUT_F), .OUT_I(OUT_I), .OUT_F(OUT_F)) int_inst (
         .in(frac_aligned),
         .out(int_aligned)
     );

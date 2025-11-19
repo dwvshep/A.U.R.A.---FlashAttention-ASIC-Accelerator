@@ -6,7 +6,7 @@ module q_align_int #(
     parameter int OUT_I, 
     parameter int OUT_F,
     localparam int W_IN  = `Q_WIDTH(IN_I, IN_F),
-    localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F)
+    localparam int W_OUT = `Q_WIDTH(OUT_I, OUT_F)
 )(
     input logic signed [W_IN-1:0] in,
     output logic signed [W_OUT-1:0] out
