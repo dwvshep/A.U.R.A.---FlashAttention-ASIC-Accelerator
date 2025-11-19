@@ -1,3 +1,5 @@
+`include "include/sys_defs.svh"
+
 module expmul(
     //control signals
     input clk,

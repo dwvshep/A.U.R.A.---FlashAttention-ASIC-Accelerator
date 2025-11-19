@@ -18,6 +18,8 @@ Stage 2:
     and this formula: n = x >> 4 is the same as n = x
 */
 
+`include "include/sys_defs.svh"
+
 module expmul_stage (
     //control signals
     input clk,
