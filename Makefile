@@ -59,7 +59,7 @@ SHELL := $(SHELL) -o pipefail
 
 # ---- Modules to Test ---- #
 
-MODULES = dot_product tree_reduce reduction_step
+MODULES = dot_product tree_reduce reduction_step int_division
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(AURA_HEADERS)
@@ -70,6 +70,12 @@ DOT_PRODUCT_FILES = verilog/tree_reduce.sv verilog/reduction_step.sv verilog/q_s
 build/dot_product.simv: $(DOT_PRODUCT_FILES)
 build/dot_product.cov: $(DOT_PRODUCT_FILES)
 synth/dot_product.vg: $(DOT_PRODUCT_FILES)
+
+DIVISION_FILES = verilog/int_division.sv
+build/int_division.simv: $(DIVISION_FILES)
+build/int_division.cov: $(DIVISION_FILES)
+synth/int_division.vg: $(DIVISION_FILES)
+
 
 #################################
 # ---- Main AURA Definition ---- #
