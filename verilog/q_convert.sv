@@ -25,6 +25,6 @@ module q_convert #(
         .out(int_aligned)
     );
 
-    assign q_convert = int_aligned;
+    assign out = int_aligned;
 
 endmodule

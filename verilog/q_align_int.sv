@@ -19,14 +19,14 @@ module q_align_int #(
         if (IN_I == OUT_I) begin
             assign temp = in;
 
-        // Need MORE fractional bits → LEFT SHIFT
+        // input has MORE integer bits → need saturation
         end else if (IN_I > OUT_I) begin
             q_saturate #(.W_OUT(W_OUT), .W_IN(W_IN)) q_sat_inst (
                 .in(in), 
                 .out(temp)
             );
 
-        // Need FEWER fractional bits → RIGHT SHIFT
+        // need MORE integer bits in the output → sign extend
         end else begin // OUT_F < IN_F
             q_sign_extend #(.W_IN(W_IN), .W_OUT(W_OUT)) q_sign_inst (
                 .in(in), 
