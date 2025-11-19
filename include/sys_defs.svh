@@ -7,14 +7,12 @@
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
 
-package sys_defs_pkg;
-
-//`ifndef __SYS_DEFS_SVH__
-//`define __SYS_DEFS_SVH__
+`ifndef __SYS_DEFS_SVH__
+`define __SYS_DEFS_SVH__
 
 
 // all files should `include "sys_defs.svh" to at least define the timescale
-//`timescale 1ns/100ps
+`timescale 1ns/100ps
 
 
 ///////////////////////////////////
@@ -87,109 +85,109 @@ package sys_defs_pkg;
 // ------------------------------------------------------------
 // SIGN EXTENSION to arbitrary width
 // ------------------------------------------------------------
-function automatic logic signed [W_OUT-1:0]
-q_sign_extend (
-    input int W_IN, 
-    input int W_OUT,
-    input logic signed [W_IN-1:0] x
-);
-    begin
-        q_sign_extend = {{(W_OUT-W_IN){x[W_IN-1]}}, x};
-    end
-endfunction
+// function automatic logic signed [W_OUT-1:0]
+// q_sign_extend (
+//     input int W_IN, 
+//     input int W_OUT,
+//     input logic signed [W_IN-1:0] x
+// );
+//     begin
+//         q_sign_extend = {{(W_OUT-W_IN){x[W_IN-1]}}, x};
+//     end
+// endfunction
 
 
 // ------------------------------------------------------------
 // SATURATE an arbitrary-width signed number to a smaller width
 // ------------------------------------------------------------
-function automatic logic signed [W_OUT-1:0]
-q_saturate (
-    input int W_OUT, 
-    input int W_IN,
-    input logic signed [W_IN-1:0] x
-);
-    localparam logic signed [W_OUT-1:0] MAXV = {1'b0, {(W_OUT-1){1'b1}}};
-    localparam logic signed [W_OUT-1:0] MINV = {1'b1, {(W_OUT-1){1'b0}}};
+// function automatic logic signed [W_OUT-1:0]
+// q_saturate (
+//     input int W_OUT, 
+//     input int W_IN,
+//     input logic signed [W_IN-1:0] x
+// );
+//     localparam logic signed [W_OUT-1:0] MAXV = {1'b0, {(W_OUT-1){1'b1}}};
+//     localparam logic signed [W_OUT-1:0] MINV = {1'b1, {(W_OUT-1){1'b0}}};
 
-    begin
-        if (x > MAXV)
-            q_saturate = MAXV;
-        else if (x < MINV)
-            q_saturate = MINV;
-        else
-            q_saturate = x[W_OUT-1:0];  // truncation is safe
-    end
-endfunction
+//     begin
+//         if (x > MAXV)
+//             q_saturate = MAXV;
+//         else if (x < MINV)
+//             q_saturate = MINV;
+//         else
+//             q_saturate = x[W_OUT-1:0];  // truncation is safe
+//     end
+// endfunction
 
 
 // ------------------------------------------------------------
 // FRACTIONAL ALIGNMENT: convert Q(IN_I).(IN_F) → Q(IN_I).(OUT_F)
 // Does safe left or right shifts.
 // ------------------------------------------------------------
-function automatic logic signed [W_OUT-1:0]
-q_align_frac (
-    input int IN_I, 
-    input int IN_F,
-    input int OUT_F,
-    input logic signed [W_IN-1:0] x
-);
-    localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
-    localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F);
+// function automatic logic signed [W_OUT-1:0]
+// q_align_frac (
+//     input int IN_I, 
+//     input int IN_F,
+//     input int OUT_F,
+//     input logic signed [W_IN-1:0] x
+// );
+//     localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
+//     localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F);
 
-    logic signed [W_OUT-1:0] temp;
+//     logic signed [W_OUT-1:0] temp;
 
-    begin
-        // Same number of fractional bits → sign extend only
-        if (OUT_F == IN_F) begin
-            temp = x;
+//     begin
+//         // Same number of fractional bits → sign extend only
+//         if (OUT_F == IN_F) begin
+//             temp = x;
 
-        // Need MORE fractional bits → LEFT SHIFT
-        end else if (OUT_F > IN_F) begin
-            temp = {x, {(OUT_F-IN_F){1'b0}}};
+//         // Need MORE fractional bits → LEFT SHIFT
+//         end else if (OUT_F > IN_F) begin
+//             temp = {x, {(OUT_F-IN_F){1'b0}}};
 
-        // Need FEWER fractional bits → RIGHT SHIFT
-        end else begin // OUT_F < IN_F
-            temp = (x >>> (IN_F-OUT_F));
-        end
+//         // Need FEWER fractional bits → RIGHT SHIFT
+//         end else begin // OUT_F < IN_F
+//             temp = (x >>> (IN_F-OUT_F));
+//         end
 
-        q_align_frac = temp;
-    end
-endfunction
+//         q_align_frac = temp;
+//     end
+// endfunction
 
 // ------------------------------------------------------------
 // INTEGER ALIGNMENT: convert Q(IN_I).(IN_F) → Q(IN_I).(OUT_F)
 // Does safe left or right shifts.
 // ------------------------------------------------------------
-function automatic logic signed [W_OUT-1:0]
-q_align_int (
-    input int IN_I, 
-    input int IN_F,
-    input int OUT_I, 
-    input int OUT_F,
-    input logic signed [W_IN-1:0] x
-);
-    localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
-    localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F);
+// function automatic logic signed [W_OUT-1:0]
+// q_align_int (
+//     input int IN_I, 
+//     input int IN_F,
+//     input int OUT_I, 
+//     input int OUT_F,
+//     input logic signed [W_IN-1:0] x
+// );
+//     localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
+//     localparam int W_OUT = `Q_WIDTH(IN_I, OUT_F);
 
-    logic signed [W_OUT-1:0] temp;
+//     logic signed [W_OUT-1:0] temp;
 
-    begin
-        // Same number of fractional bits → sign extend only
-        if (IN_T == OUT_I) begin
-            temp = x;
+//     begin
+//         // Same number of fractional bits → sign extend only
+//         if (IN_T == OUT_I) begin
+//             temp = x;
 
-        // Need MORE fractional bits → LEFT SHIFT
-        end else if (IN_I > OUT_I) begin
-            temp = q_saturate  #(W_OUT, W_IN)(x);
+//         // Need MORE fractional bits → LEFT SHIFT
+//         end else if (IN_I > OUT_I) begin
+//             temp = q_saturate  #(W_OUT, W_IN)(x);
 
-        // Need FEWER fractional bits → RIGHT SHIFT
-        end else begin // OUT_F < IN_F
-            temp = q_sign_extend(x, W_IN, W_OUT)
-        end
+//         // Need FEWER fractional bits → RIGHT SHIFT
+//         end else begin // OUT_F < IN_F
+//             temp = q_sign_extend(x, W_IN, W_OUT)
+//         end
 
-        q_align_int = temp;
-    end
-endfunction
+//         q_align_int = temp;
+//     end
+// endfunction
 
 
 // ------------------------------------------------------------
@@ -203,28 +201,28 @@ endfunction
 //   2. Saturate to target width
 //   3. Return clipped result
 // ------------------------------------------------------------
-function automatic logic signed [W_OUT-1:0]
-q_convert (
-    input int IN_I, 
-    input int IN_F,
-    input int OUT_I, 
-    input int OUT_F,
-    input logic signed [W_IN-1:0] x
-);
+// function automatic logic signed [W_OUT-1:0]
+// q_convert (
+//     input int IN_I, 
+//     input int IN_F,
+//     input int OUT_I, 
+//     input int OUT_F,
+//     input logic signed [W_IN-1:0] x
+// );
 
-    localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
-    localparam int W_MID = `Q_WIDTH(IN_I, OUT_F);
-    localparam int W_OUT = `Q_WIDTH(OUT_I, OUT_F);
+//     localparam int W_IN  = `Q_WIDTH(IN_I, IN_F);
+//     localparam int W_MID = `Q_WIDTH(IN_I, OUT_F);
+//     localparam int W_OUT = `Q_WIDTH(OUT_I, OUT_F);
 
-    logic signed [W_MID-1:0] frac_aligned;
-    logic signed [W_OUT-1:0] int_aligned;
+//     logic signed [W_MID-1:0] frac_aligned;
+//     logic signed [W_OUT-1:0] int_aligned;
 
-    begin
-        frac_aligned   = q_align_frac #(IN_I, IN_F, OUT_F)(x);
-        int_aligned    = q_align_int #(IN_I, OUT_I)(frac_aligned);
-        q_convert = int_aligned;
-    end
-endfunction
+//     begin
+//         frac_aligned   = q_align_frac #(IN_I, IN_F, OUT_F)(x);
+//         int_aligned    = q_align_int #(IN_I, OUT_I)(frac_aligned);
+//         q_convert = int_aligned;
+//     end
+// endfunction
 
 
 
@@ -287,11 +285,12 @@ typedef `Q_TYPE(0, 7) MEM_QT;
 //possibly effect the value of the final output
 
 //Now we work backwards from division
+typedef `Q_TYPE(9, 7) DIV_INPUT_QT;
 
 //Since we know the denominator should be at least 1, 
 //Chat math says we should only need one extra fractional bit in the
 //numerator and denominator to prevent and errors in the output Q0.7
-typedef `Q_TYPE(9, 8) EXPMUL_VSHIFT_QT;
+typedef `Q_TYPE(9, 16) EXPMUL_VSHIFT_QT;
 
 // Keep the possible shift exponent rang (-16, 15) this is almost overkill
 typedef `Q_TYPE(4, 0) EXPMUL_EXPONENT_QT;
@@ -380,4 +379,4 @@ typedef enum logic [1:0] {
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
 
-endpackage
+`endif

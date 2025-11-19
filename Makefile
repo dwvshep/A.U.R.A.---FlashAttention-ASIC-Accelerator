@@ -66,7 +66,7 @@ ALL_HEADERS = $(AURA_HEADERS)
 
 # TODO: add extra source file dependencies below
 
-DOT_PRODUCT_FILES = verilog/tree_reduce.sv verilog/reduction_step.sv
+DOT_PRODUCT_FILES = verilog/tree_reduce.sv verilog/reduction_step.sv verilog/q_sign_extend.sv verilog/q_saturate.sv verilog/q_align_frac.sv verilog/q_align_int.sv verilog/q_convert.sv
 build/dot_product.simv: $(DOT_PRODUCT_FILES)
 build/dot_product.cov: $(DOT_PRODUCT_FILES)
 synth/dot_product.vg: $(DOT_PRODUCT_FILES)
@@ -78,9 +78,7 @@ synth/dot_product.vg: $(DOT_PRODUCT_FILES)
 # We also reuse this section to compile the cpu, but not to run it
 # You should still run programs in the same way as project 3
 
-AURA_HEADERS = 
-
-AURA_PACKAGES = include/sys_defs_pkg.sv
+AURA_HEADERS = include/sys_defs.svh
 
 # tb/cpu_test.sv is implicit
 AURA_TESTBENCH = tb/mem.sv 
@@ -153,7 +151,7 @@ $(MODULES:%=./%.out) $(MODULES:%=./%.syn.out): ./%.out: build/%.out
 # The normal simulation executable will run your testbench on simulated modules
 $(MODULES:%=build/%.simv): build/%.simv: test/%_test.sv verilog/%.sv | build
 	@$(call PRINT_COLOR, 5, compiling the simulation executable $@)
-	$(VCS) $(AURA_PACKAGES) $(filter-out $(ALL_HEADERS),$^) -o $@
+	$(VCS) $(filter-out $(ALL_HEADERS),$^) -o $@
 	@$(call PRINT_COLOR, 6, finished compiling $@)
 
 # This also generates many other files, see the tcl script's introduction for info on each of them

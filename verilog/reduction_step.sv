@@ -1,6 +1,8 @@
 //This module computes the sum of a list of inputs in a tree-like fashion
 
-module reduction_step import sys_defs_pkg::*; #(
+`include "include/sys_defs.svh"
+
+module reduction_step #(
     parameter int INPUT_LEN      = `MAX_EMBEDDING_DIM,
     parameter int W_IN           = 2*`INTEGER_WIDTH,  // width of each input operand
     parameter int STEPS          = 1,
@@ -47,13 +49,14 @@ module reduction_step import sys_defs_pkg::*; #(
     //outputs are combinational
     logic signed [W_OUT-1:0] temp   [INPUT_LEN];
     logic signed [W_OUT-1:0] stageN [INPUT_LEN];
+    int out_len;
     always_comb begin
         //sign extend inputs first
         for(int i = 0; i < INPUT_LEN; i++) begin
             stageN[i] = {{(W_OUT-W_IN){list[i][W_IN-1]}}, list[i]};
         end
 
-        int out_len = INPUT_LEN >> 1;
+        out_len = INPUT_LEN >> 1;
 
         //Reduce
         for(int s = 0; s < STEPS; s++) begin

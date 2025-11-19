@@ -2,7 +2,9 @@
 //The result is then scaled by dividing by the square root of the matrix dimension
 //If we assume dk = 64, then dividing by root dk is equivalent to >> 3
 
-module dot_product import sys_defs_pkg::*; (
+`include "include/sys_defs.svh"
+
+module dot_product (
     //control signals
     input clk,
     input rst,
@@ -123,6 +125,10 @@ module dot_product import sys_defs_pkg::*; (
 
     //scale by root(dk)
     assign shifted_sum = sum >>> 3;
-    assign s_out = q_convert(7, 6, 4, 3, shifted_sum);
+    q_convert #(.IN_I(7), .IN_F(6), .OUT_I(4), .OUT_F(3)) conv_inst (
+        .in(shifted_sum),
+        .out(s_out)
+    );
+    //assign s_out = q_convert(7, 6, 4, 3, shifted_sum);
 
 endmodule

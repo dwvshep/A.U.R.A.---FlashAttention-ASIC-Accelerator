@@ -1,4 +1,4 @@
-`timescale 1ns/1ps
+`include "include/sys_defs.svh"
 
 module dot_product_tb;
 
@@ -160,7 +160,7 @@ module dot_product_tb;
     // --------------------------------------------------------
     initial begin
         $dumpfile("tb_dot_product.vcd");
-        $dumpvars(0, tb_dot_product);
+        //$dumpvars(0, tb_dot_product);
     end
 
 endmodule

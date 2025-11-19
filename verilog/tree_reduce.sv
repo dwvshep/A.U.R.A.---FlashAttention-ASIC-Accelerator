@@ -2,7 +2,9 @@
 //Assumes LEN is a power of 2
 //STAGES must divide evenly into $clog2(LEN)
 
-module tree_reduce import sys_defs_pkg::*; #(
+`include "include/sys_defs.svh"
+
+module tree_reduce #(
     parameter int LEN      = `MAX_EMBEDDING_DIM,
     parameter int W_IN     = 2*`INTEGER_WIDTH,  // width of each input operand
     parameter int W_OUT    = W_IN + $clog2(LEN),    // width of sum
@@ -47,8 +49,8 @@ module tree_reduce import sys_defs_pkg::*; #(
             logic signed [OUT_WIDTH-1:0] stage_list_out [OUT_LEN];
 
             //Assign list_in to first stage's input, else last stage's output
-            for(int i = 0; i < IN_LEN; i++) begin
-                stage_list_in[i] = (s == 0) ? list_in[i] : STAGE[s-1].stage_list_out[i];
+            for(genvar i = 0; i < IN_LEN; i++) begin
+                assign stage_list_in[i] = (s == 0) ? list_in[i] : STAGE[s-1].stage_list_out[i];
             end
 
             reduction_step #(
