@@ -1,4 +1,4 @@
-`include "inc/sys_defs.svh"
+`include "include/sys_defs.svh"
 
 // P4 TODO: Add your own debugging framework. Basic printing of data structures
 //          is an absolute necessity for the project. You can use C functions 
@@ -30,8 +30,8 @@ module testbench;
     // this testbench will generate 4 output files based on the output
     // named OUTPUT.{out cpi, wb, ppln} for the memory, cpi, writeback, and pipeline outputs.
     string Q_mem, K_mem, V_mem;
-    string program_memory_file, output_name;
-    string out_outfile, cpi_outfile, writeback_outfile;//, pipeline_outfile;
+    string output_name;
+    string out_outfile;// mem_output file
     int out_fileno; // verilog uses integer file handles with $fopen and $fclose
 
     // variables used in the testbench
@@ -63,12 +63,6 @@ module testbench;
     DATA [1:0] updated_memory [`MEM_64BIT_LINES-1:0];
 
     localparam WIDTH = $bits(MEM_BLOCK);
-
-
-    parameter ADDR K_BASE          = 'h0000_1000;
-    parameter ADDR V_BASE          = 'h0000_2000;
-    parameter ADDR Q_BASE          = 'h0000_3000;
-    parameter ADDR O_BASE          = 'h0000_4000;
 
     
     localparam integer K_IDX = K_BASE >> 3;  
@@ -183,13 +177,6 @@ module testbench;
         $display("  %16t : Deasserting Reset", $realtime);
         reset = 1'b0;
 
-        wb_fileno = $fopen(writeback_outfile);
-        $fdisplay(wb_fileno, "Register writeback output (hexadecimal)");
-
-        // Open pipeline output file AFTER throwing the reset otherwise the reset state is displayed
-        // open_pipeline_output_file(pipeline_outfile);
-        // print_header();
-
         out_fileno = $fopen(out_outfile);
 
         $display("  %16t : Running Processor", $realtime);
@@ -209,21 +196,15 @@ module testbench;
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
 
-            // show_curr_mem_and_status();
-
             // TODO: change error status to done flag
 
             // stop the processor
-            if (error_status != NO_ERROR || clock_count > `TB_MAX_CYCLES) begin
+            if (done || clock_count > `TB_MAX_CYCLES) begin
 
-                $display("  %16t : Processor Finished", $realtime);
+                $display("  %16t : Processing Finished", $realtime);
 
-                // display the final memory and status
-                $display("FRICK U");
                 @(negedge clock);
-                show_final_mem_and_status(error_status);
-                // output the final CPI
-                output_cpi_file();
+                show_final_mem_and_status();
 
                 $display("\n---- Finished CPU Testbench ----\n");
 
@@ -236,36 +217,22 @@ module testbench;
     // Show contents of Unified Memory in both hex and decimal
     // Also output the final processor status
     task show_final_mem_and_status;
-        input EXCEPTION_CODE final_status;
-        int showing_data;
         
         begin
             
             updated_memory = memory.unified_memory;
             $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
             $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
+            $fdisplay(out_fileno, "Display starts at Base Addr: %x", O_BASE)
             $fdisplay(out_fileno, "@@@");
             showing_data = 0;
-            for (int k = 0; k < `MEM_64BIT_LINES; ++k) begin
-                
-                //that sh is in memory
-                if (updated_memory[k] != 0) begin
-                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, updated_memory[k],
-                                                            updated_memory[k]);
-                    showing_data = 1;
-                end else if (showing_data != 0) begin
-                    $fdisplay(out_fileno, "@@@");
-                    showing_data = 0;
-                end
+
+            for(int k = 0; k < ROW; k++) begin
+                $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, updated_memory[O_IDX + k], updated_memory[O_IDX + k]);
             end
+
             $fdisplay(out_fileno, "@@@");
 
-            case (final_status)
-                LOAD_ACCESS_FAULT: $fdisplay(out_fileno, "@@@ System halted on memory error");
-                HALTED_ON_WFI:     $fdisplay(out_fileno, "@@@ System halted on WFI instruction");
-                ILLEGAL_INST:      $fdisplay(out_fileno, "@@@ System halted on illegal instruction");
-                default:           $fdisplay(out_fileno, "@@@ System halted on unknown error code %x", final_status);
-            endcase
             $fdisplay(out_fileno, "@@@");
             $fclose(out_fileno);
         end
