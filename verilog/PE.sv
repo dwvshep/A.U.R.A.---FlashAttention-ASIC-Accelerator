@@ -50,7 +50,7 @@ module PE(
     always_comb begin
         v_star[0] = 1;
         for(int i = 1; i <= `MAX_EMBEDDING_DIM) begin
-            v_star[i] = `Q_CONVERT(v_vector_double_delayed[i], 0, 7, 9, 8);
+            v_star[i] = `Q_CONVERT(v_vector_double_delayed[i], 0, 7, 9, 7);
         end
     end
 

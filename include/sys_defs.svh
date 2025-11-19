@@ -109,6 +109,17 @@
             $signed(x)                                                  \
     )
 
+// `define Q_ALIGN_FRAC(x, IN_W, IN_F, OUT_F) \
+// ( \
+//     ((OUT_F) == (IN_F)) ? \
+//         $signed(x) : \
+//     ((OUT_F) > (IN_F)) ? \
+//         /* OUT_F > IN_F: LEFT SHIFT by positive amount */ \
+//         ($signed({ {(OUT_F-IN_F){x[IN_W-1]}}, x }) <<< (OUT_F-IN_F)) : \
+//         /* OUT_F < IN_F: RIGHT SHIFT */ \
+//         ($signed(x) >>> (IN_F-OUT_F)) \
+// )
+
 
 // -------------------------------------------------------------
 // Q_CONVERT(x, IN_W, IN_F, OUT_I, OUT_F)
@@ -128,7 +139,7 @@
 //     narrowing (or you can assign to a wider signal to get sign extension).
 // -------------------------------------------------------------
 `define Q_CONVERT(x, IN_I, IN_F, OUT_I, OUT_F)                                                                          \
-    (                                                                                                                   \                                                                     \
+    (                                                                                                                   \                                                                     
         (                                                                                                               \
             (                                                                                                           \
                 ( `Q_ALIGN_FRAC(x, `Q_WIDTH(IN_I, IN_F), IN_F, OUT_F) > `MAX_SIGNED(`Q_WIDTH(OUT_I, OUT_F)) ) ?         \
@@ -205,7 +216,7 @@ typedef `Q_TYPE(0, 7) MEM_QT;
 //Since we know the denominator should be at least 1, 
 //Chat math says we should only need one extra fractional bit in the
 //numerator and denominator to prevent and errors in the output Q0.7
-typedef `Q_TYPE(9, 8) EXPMUL_VSHIFT_QT;
+typedef `Q_TYPE(9, 7) EXPMUL_VSHIFT_QT;
 
 // Keep the possible shift exponent rang (-16, 15) this is almost overkill
 typedef `Q_TYPE(4, 0) EXPMUL_EXPONENT_QT;

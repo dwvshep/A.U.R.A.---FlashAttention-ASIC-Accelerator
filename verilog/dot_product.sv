@@ -49,7 +49,7 @@ module dot_product (
     // logic signed [W_PROD-1:0] products [LEN];
     // logic signed [W_SUM-1:0]  sum;
     PRODUCT_QT products [`MAX_EMBEDDING_DIM];
-    DOT_QT sum;
+    DOT_QT sum, shifted_sum;
 
     //Latch Q input
     always_ff @(posedge clk) begin
@@ -124,6 +124,7 @@ module dot_product (
     );
 
     //scale by root(dk)
-    assign s_out = `Q_CONVERT(sum >>> 3, 7, 6, 4, 3);
+    assign shifted_sum = sum >>> 3;
+    assign s_out = `Q_CONVERT(shifted_sum, 7, 6, 4, 3);
 
 endmodule
