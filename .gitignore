@@ -20,7 +20,7 @@ csrc/
 # cov_report_*/
 
 # ignore the entire build/ folder
-build/
+build/*
 
 # synthesis files
 # *.vg
