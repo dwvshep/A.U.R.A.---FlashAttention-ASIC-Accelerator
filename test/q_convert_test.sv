@@ -65,6 +65,7 @@ module q_convert_tb;
     // Directed corner cases first
     logic signed [W_IN-1:0] cases[$] = '{
         '0,
+        (1 << (W_IN-1)) - 3,    //rounding test
         (1 << (W_IN-1)) - 1,    // max positive
         -(1 << (W_IN-1)),       // max negative
         (1 << (IN_F-1)),        // +0.5

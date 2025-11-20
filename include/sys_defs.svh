@@ -48,6 +48,10 @@
 
 `define Q_SRAM_DEPTH (`Q_SRAM_BYTES/`Q_SRAM_ROW_BYTES) // Number of full length Q row vectors that can be stored in SRAM
 
+`define REDUCTIONS_PER_STAGE $clog2(`MAX_EMBEDDING_DIM)
+
+`define NUM_REDUCE_STAGES ($clog2(`MAX_EMBEDDING_DIM)/`REDUCTIONS_PER_STAGE)
+
 
 
 //////////////////////////////////////

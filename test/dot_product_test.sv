@@ -9,7 +9,7 @@ module dot_product_tb;
     localparam int DIM = `MAX_EMBEDDING_DIM;
     localparam int ELEM_W = `INTEGER_WIDTH;   // Q0.7
     localparam int SCORE_W = 8;  // your output width
-    localparam int NUM_TESTS = 10;
+    localparam int NUM_TESTS = 1;
 
     // --------------------------------------------------------
     // DUT Signals
@@ -74,96 +74,88 @@ module dot_product_tb;
     endfunction
 
     // Convert real to SCORE_QT (signed 13-bit)
-    function logic signed [12:0] real_to_score(real r);
-        if (r * 32.0 > 127)  return $rtoi(127);
-        if (r * 32.0 < -128) return $rtoi(-128);
-        return $rtoi(r * 32.0);
+    function SCORE_QT real_to_score(real r);
+        //real scaled_r = r * 32.0;
+        //real rounded_r = r * 32.0 + (r * 32.0 >= 0 ? 0.5 : -0.5);
+        if (r * 2**`SCORE_F + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5) > 127)  return $rtoi(127);
+        if (r * 2**`SCORE_F + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5) < -128) return $rtoi(-128);
+        return $rtoi(r * 2**`SCORE_F); // + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5)
     endfunction
 
+
+    int pass_count = 0;
+    SCORE_QT golden_q;
+    SCORE_QT expected_queue[$];  // FIFO
+    SCORE_QT expected;
+    real golden_row[DIM];      // store golden results for 512 K’s
+    real golden_val;
     // --------------------------------------------------------
-    // Reset
+    // Reset --> TEST
     // --------------------------------------------------------
-    initial begin
+    initial begin : TEST_MAIN
+        $display("QTYPES:");
+        $display("SCORE_QT: Q(%0d,%0d)", `SCORE_I, `SCORE_F);
+        $display("PRODUCT_QT: Q(%0d,%0d)", `PRODUCT_I, `PRODUCT_F);
+        $display("INTERMEDIATE_PRODUCT_QT: Q(%0d,%0d)", `INTERMEDIATE_PRODUCT_I, `INTERMEDIATE_PRODUCT_F);
+        $display("DOT_QT: Q(%0d,%0d)", `DOT_I, `DOT_F);
         clk = 0;
         rst = 1;
         Q_vld_in = 0;
         K_vld_in = 0;
         rdy_in   = 1;
 
-        #20;
+        @(posedge clk);
+        @(posedge clk)
         rst = 0;
-    end
-
-    // --------------------------------------------------------
-    // TEST PROCESS
-    // --------------------------------------------------------
-    int pass_count = 0;
-    logic signed [12:0] golden_q;
-
-    initial begin : TEST_MAIN
-        @(negedge rst);
-        #10;
 
         for (int t = 0; t < NUM_TESTS; t++) begin
-            automatic real golden = 0.0;
-
-            // -------------------------------
-            // Generate random Q0.7 input vectors
-            // -------------------------------
-            for (int i = 0; i < DIM; i++) begin
+            //-----------------------------
+            // 1. Generate one Q vector
+            //-----------------------------
+            for (int i = 0; i < DIM; i++)
                 q_in[i] = $urandom_range(-128, 127);
-                k_in[i] = $urandom_range(-128, 127);
 
-                golden += q07_to_real(q_in[i]) * q07_to_real(k_in[i]);
-                // $display("[Q0.7 FORMAT] q_in[%0d]: %0b, k_in[%0d]: %0b",
-                //          i, q_in[i], i, k_in[i]);
-                // $display("[REAL FORMAT] q_in[%0d]: %0f, k_in[%0d]: %0f",
-                //          i, q07_to_real(q_in[i]), i, q07_to_real(k_in[i]));
-                // $display("golden: %0f",
-                //          golden);
+            Q_vld_in = 1;
+            wait (Q_rdy_out);
+            @(posedge clk);
+            Q_vld_in = 0;
+
+            //-----------------------------
+            // 3. Stream K vectors
+            //-----------------------------
+            for (int k = 0; k < `MAX_SEQ_LENGTH; k++) begin
+                // generate a NEW K vector each cycle
+                golden_val = 0.0;
+                for (int i = 0; i < DIM; i++) begin
+                    k_in[i] = $urandom_range(-128, 127);
+                    golden_val += q07_to_real(q_in[i]) * q07_to_real(k_in[i]);
+                end
+                golden_val /= 8.0;  // >>3 scaling
+                golden_q = real_to_score(golden_val);
+                expected_queue.push_back(golden_q);
+                
+                // handshake for K
+                K_vld_in = 1;
+                wait (K_rdy_out);
+                @(posedge clk);
+                K_vld_in = 0;
+
+                // Check for result
+                if (vld_out) begin
+                    expected = expected_queue.pop_front();
+
+                    if (s_out !== expected) begin
+                        $display("[FAIL] got=%0d expected=%0d", s_out, expected);
+                    end else begin
+                        $display("[PASS] out=%0d expected=%0d", s_out, expected);
+                    end
+                end
             end
 
-            // Apply the >>> 3 division (divide by sqrt(64)=8)
-            golden = golden / 8.0;
-            $display("golden: %0f",
-                         golden);
-
-            golden_q = real_to_score(golden);
-
-
-            // -------------------------------
-            // Drive handshake for inputs
-            // -------------------------------
-            @(posedge clk);
-            Q_vld_in <= 1;
-            K_vld_in <= 1;
-
-            // Wait for DUT to accept inputs
-            wait (Q_rdy_out && K_rdy_out);
-
-            @(posedge clk);
-            Q_vld_in <= 0;
-            K_vld_in <= 0;
-
-            // -------------------------------
-            // Wait for output
-            // -------------------------------
-            wait (vld_out == 1);
-            //@(posedge clk);
-            #0;
-
-            // Check result
-            if (s_out === golden_q) begin
-                $display("[PASS] test %0d: s_out=%13b, golden=%13b",
-                         t, s_out, golden_q);
-                pass_count++;
-            end else begin
-                $display("[FAIL] test %0d: s_out=%13b, golden=%13b",
-                         t, s_out, golden_q);
-            end
-
-            // Add spacing between tests
-            @(posedge clk);
+            //-----------------------------
+            // 4. Wait for Q to clear
+            //-----------------------------
+            wait (Q_rdy_out);
         end
 
         $display("\n======== TEST SUMMARY ========");

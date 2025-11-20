@@ -79,6 +79,15 @@ module dot_product (
         //     $display("q[%0d]: %0b OR %0f",
         //     i, q[i], q[i]/128.0);
         // end
+        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+        //     $display("k[%0d]: %0b OR %0f",
+        //     i, k[i], k[i]/128.0);
+        // end
+        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+        //     $display("inter_prod[%0d]: %0b OR %0f",
+        //     i, intermediate_products[i], intermediate_products[i]/128.0);
+        // end
+        // $display("Sum: %0d", sum);
     end
 
     //Latch K inputs
@@ -135,7 +144,7 @@ module dot_product (
 
     //Tree Reduction
     tree_reduce #(
-        .STAGES(3)
+        .STAGES(`NUM_REDUCE_STAGES)
     ) tree_inst (
         .clk(clk),
         .rst(rst),

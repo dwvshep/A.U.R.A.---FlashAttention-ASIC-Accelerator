@@ -52,6 +52,8 @@ module reduction_step #(
             end
         end
         // $display("valid_reg: %0b", valid_reg);
+        // $display("list[0]: %0b",
+                // list[0]);
         // for (int i = 0; i < INPUT_LEN; ++i) begin
         //     $display("list[%0d]: %0b",
         //     i, list[i]);
