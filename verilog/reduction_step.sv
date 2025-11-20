@@ -33,6 +33,7 @@ module reduction_step #(
 
     //Latch inputs first
     always_ff @(posedge clk) begin
+        //$display("[REDUCTION STEP LATCH]");
         if(rst) begin
             //list <= '0;
             for (int i = 0; i < INPUT_LEN; i++) begin
@@ -50,6 +51,11 @@ module reduction_step #(
                 valid_reg <= 1'b0;
             end
         end
+        // $display("valid_reg: %0b", valid_reg);
+        // for (int i = 0; i < INPUT_LEN; ++i) begin
+        //     $display("list[%0d]: %0b",
+        //     i, list[i]);
+        // end
     end
 
     //outputs are combinational

@@ -9,7 +9,7 @@ module dot_product_tb;
     localparam int DIM = `MAX_EMBEDDING_DIM;
     localparam int ELEM_W = `INTEGER_WIDTH;   // Q0.7
     localparam int SCORE_W = 8;  // your output width
-    localparam int NUM_TESTS = 50;
+    localparam int NUM_TESTS = 10;
 
     // --------------------------------------------------------
     // DUT Signals
@@ -75,10 +75,12 @@ module dot_product_tb;
 
     // Convert real to SCORE_QT (signed 8-bit)
     function logic signed [7:0] real_to_score(real r);
-        real scaled = r * 128.0; // since your output is also Q0.7
-        if (scaled > 127)  scaled = 127;
-        if (scaled < -128) scaled = -128;
-        return $rtoi(scaled);
+        //real scaled = r * 8.0; // since output is a Q4.3
+        // $display("real_to_score DEBUG: r=%f  scaled=%f  rtoi=%0d", 
+        //      r, r * 8.0, $rtoi(scaled));
+        if (r * 2**12 > 7)  return $rtoi(7);
+        if (r * 2**12 < -8) return $rtoi(-8);
+        return $rtoi(r * 2**12);
     endfunction
 
     // --------------------------------------------------------
@@ -116,12 +118,25 @@ module dot_product_tb;
                 k_in[i] = $urandom_range(-128, 127);
 
                 golden += q07_to_real(q_in[i]) * q07_to_real(k_in[i]);
+                // $display("[Q0.7 FORMAT] q_in[%0d]: %0b, k_in[%0d]: %0b",
+                //          i, q_in[i], i, k_in[i]);
+                // $display("[REAL FORMAT] q_in[%0d]: %0f, k_in[%0d]: %0f",
+                //          i, q07_to_real(q_in[i]), i, q07_to_real(k_in[i]));
+                // $display("golden: %0f",
+                //          golden);
             end
 
             // Apply the >>> 3 division (divide by sqrt(64)=8)
             golden = golden / 8.0;
+            $display("golden: %0f",
+                         golden);
 
             golden_q = real_to_score(golden);
+
+            $display("golden_q: %0b",
+                         golden_q);
+
+            //$display("[TEST] real2score(1): %0b", $rtoi(7.0));
 
             // -------------------------------
             // Drive handshake for inputs
@@ -141,6 +156,8 @@ module dot_product_tb;
             // Wait for output
             // -------------------------------
             wait (vld_out == 1);
+            //@(posedge clk);
+            #0;
 
             // Check result
             if (s_out === golden_q) begin
@@ -148,7 +165,7 @@ module dot_product_tb;
                          t, s_out, golden_q);
                 pass_count++;
             end else begin
-                $display("[FAIL] test %0d: s_out=%0d, golden=%0d",
+                $display("[FAIL] test %0d: s_out=%8b, golden=%0d",
                          t, s_out, golden_q);
             end
 

@@ -54,7 +54,9 @@ module dot_product (
 
     //Latch Q input
     always_ff @(posedge clk) begin
+        //$display("[DOT PRODUCT Q LATCH]");
         if(rst) begin
+            //$display("RESET");
             q <= '0;
             valid_q <= 1'b0;
             row_counter <= '0;
@@ -69,6 +71,12 @@ module dot_product (
                 valid_q <= 1'b0;
             end
         end
+        // $display("valid_q: %0b", valid_q);
+        // $display("row_counter: %0d", row_counter);
+        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+        //     $display("q[%0d]: %0b OR %0f",
+        //     i, q[i], q[i]/128.0);
+        // end
     end
 
     //Latch K inputs
@@ -80,7 +88,7 @@ module dot_product (
             if(K_vld_in && K_rdy_out) begin //Handshake successful
                 k <= k_in;
                 valid_k <= 1'b1;
-            end else if(all_valid && rdy_in) begin //Only downstream is ready (clear internal pipeline)
+            end else if(all_valid && reduction_rdy) begin //Only downstream is ready (clear internal pipeline)
                 valid_k <= 1'b0;
             end
         end
@@ -95,7 +103,7 @@ module dot_product (
             if(V_vld_in && V_rdy_out) begin //Handshake successful
                 v <= v_in;
                 valid_v <= 1'b1;
-            end else if(all_valid && rdy_in) begin //Only downstream is ready (clear internal pipeline)
+            end else if(all_valid && reduction_rdy) begin //Only downstream is ready (clear internal pipeline)
                 valid_v <= 1'b0;
             end
         end
@@ -111,7 +119,12 @@ module dot_product (
     //
     generate
         for(genvar p = 0; p < `MAX_EMBEDDING_DIM; p++) begin
-            q_convert #(.IN_I(1), .IN_F(14), .OUT_I(1), .OUT_F(6)) prod_conv_inst (
+            q_convert #(
+                .IN_I(`INTERMEDIATE_PRODUCT_I), 
+                .IN_F(`INTERMEDIATE_PRODUCT_F), 
+                .OUT_I(`PRODUCT_I), 
+                .OUT_F(`PRODUCT_F)
+            ) prod_conv_inst (
                 .in(intermediate_products[p]),
                 .out(products[p])
             );
@@ -136,10 +149,14 @@ module dot_product (
 
     //scale by root(dk)
     assign shifted_sum = sum >>> 3;
-    q_convert #(.IN_I(7), .IN_F(6), .OUT_I(4), .OUT_F(3)) scale_conv_inst (
+    q_convert #(
+        .IN_I(`DOT_I), 
+        .IN_F(`DOT_F), 
+        .OUT_I(`SCORE_I), 
+        .OUT_F(`SCORE_F)
+    ) scale_conv_inst (
         .in(shifted_sum),
         .out(s_out)
     );
-    //assign s_out = q_convert(7, 6, 4, 3, shifted_sum);
 
 endmodule

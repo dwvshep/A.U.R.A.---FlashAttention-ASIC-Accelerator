@@ -6,7 +6,7 @@
 
 module tree_reduce #(
     parameter int LEN      = `MAX_EMBEDDING_DIM,
-    parameter int W_IN     = `Q_WIDTH(1, 6),  // width of each input operand
+    parameter int W_IN     = `Q_WIDTH(`PRODUCT_I, `PRODUCT_F),  // width of each input operand
     parameter int W_OUT    = W_IN + $clog2(LEN),    // width of sum
     parameter int STAGES   = $clog2(LEN),
     parameter int REDUCTIONS_PER_STAGE = (W_OUT-W_IN)/STAGES
@@ -59,10 +59,6 @@ module tree_reduce #(
                     assign stage_list_in[i] = STAGE[s-1].stage_list_out[i];
                 end
             end
-            
-            // for(genvar i = 0; i < IN_LEN; i++) begin
-            //     assign stage_list_in[i] = (s == 0) ? list_in[i] : STAGE[s-1].stage_list_out[i];
-            // end
 
             reduction_step #(
                     .INPUT_LEN (IN_LEN),         // LEN >> s*REDUCTIONS_PER_STAGE
@@ -84,5 +80,7 @@ module tree_reduce #(
                 );
         end
     endgenerate
+
+    assign sum = STAGE[STAGES-1].stage_list_out[0];
 
 endmodule
