@@ -66,21 +66,18 @@ module dot_product_tb;
     endfunction
 
     // Convert real to Q0.7 (saturate)
-    function logic signed [7:0] real_to_q07(real r);
+    function logic signed [12:0] real_to_q07(real r);
         real scaled = r * 128.0;
         if (scaled > 127)  scaled = 127;
         if (scaled < -128) scaled = -128;
         return $rtoi(scaled);
     endfunction
 
-    // Convert real to SCORE_QT (signed 8-bit)
-    function logic signed [7:0] real_to_score(real r);
-        //real scaled = r * 8.0; // since output is a Q4.3
-        // $display("real_to_score DEBUG: r=%f  scaled=%f  rtoi=%0d", 
-        //      r, r * 8.0, $rtoi(scaled));
-        if (r * 2**12 > 7)  return $rtoi(7);
-        if (r * 2**12 < -8) return $rtoi(-8);
-        return $rtoi(r * 2**12);
+    // Convert real to SCORE_QT (signed 13-bit)
+    function logic signed [12:0] real_to_score(real r);
+        if (r * 32.0 > 127)  return $rtoi(127);
+        if (r * 32.0 < -128) return $rtoi(-128);
+        return $rtoi(r * 32.0);
     endfunction
 
     // --------------------------------------------------------
@@ -101,7 +98,7 @@ module dot_product_tb;
     // TEST PROCESS
     // --------------------------------------------------------
     int pass_count = 0;
-    logic signed [7:0] golden_q;
+    logic signed [12:0] golden_q;
 
     initial begin : TEST_MAIN
         @(negedge rst);
@@ -133,10 +130,6 @@ module dot_product_tb;
 
             golden_q = real_to_score(golden);
 
-            $display("golden_q: %0b",
-                         golden_q);
-
-            //$display("[TEST] real2score(1): %0b", $rtoi(7.0));
 
             // -------------------------------
             // Drive handshake for inputs
@@ -161,11 +154,11 @@ module dot_product_tb;
 
             // Check result
             if (s_out === golden_q) begin
-                $display("[PASS] test %0d: s_out=%0d, golden=%0d",
+                $display("[PASS] test %0d: s_out=%13b, golden=%13b",
                          t, s_out, golden_q);
                 pass_count++;
             end else begin
-                $display("[FAIL] test %0d: s_out=%8b, golden=%0d",
+                $display("[FAIL] test %0d: s_out=%13b, golden=%13b",
                          t, s_out, golden_q);
             end
 

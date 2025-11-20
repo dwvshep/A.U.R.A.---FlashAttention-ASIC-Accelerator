@@ -76,7 +76,7 @@
 
 //Set this to 1 if you want to round decimals to the nearest value when converting to a narrower bit width
 //Leave at 0 if you want simpler truncation with half precision
-`define ROUNDING 0
+`define ROUNDING 1
 
 //Input vectors (QKV)
 `define INPUT_VEC_I 0

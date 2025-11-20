@@ -59,7 +59,7 @@ SHELL := $(SHELL) -o pipefail
 
 # ---- Modules to Test ---- #
 
-MODULES = dot_product tree_reduce reduction_step int_division
+MODULES = dot_product tree_reduce reduction_step q_convert int_division
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(AURA_HEADERS)
@@ -70,6 +70,11 @@ DOT_PRODUCT_FILES = verilog/tree_reduce.sv verilog/reduction_step.sv verilog/q_s
 build/dot_product.simv: $(DOT_PRODUCT_FILES)
 build/dot_product.cov: $(DOT_PRODUCT_FILES)
 synth/dot_product.vg: $(DOT_PRODUCT_FILES)
+
+Q_CONVERT_FILES = verilog/q_sign_extend.sv verilog/q_saturate.sv verilog/q_align_frac.sv verilog/q_align_int.sv
+build/q_convert.simv: $(Q_CONVERT_FILES)
+build/q_convert.cov: $(Q_CONVERT_FILES)
+synth/q_convert.vg: $(Q_CONVERT_FILES)
 
 DIVISION_FILES = verilog/int_division.sv
 build/int_division.simv: $(DIVISION_FILES)

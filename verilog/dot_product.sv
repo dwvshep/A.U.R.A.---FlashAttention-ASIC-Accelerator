@@ -50,7 +50,9 @@ module dot_product (
     // logic signed [W_SUM-1:0]  sum;
     PRODUCT_QT products [`MAX_EMBEDDING_DIM];
     INTERMEDIATE_PRODUCT_QT intermediate_products [`MAX_EMBEDDING_DIM];
-    DOT_QT sum, shifted_sum;
+    DOT_QT sum;
+    //DOT_QT shifted_sum;
+    SCORE_QT sum_conv;
 
     //Latch Q input
     always_ff @(posedge clk) begin
@@ -148,15 +150,17 @@ module dot_product (
     );
 
     //scale by root(dk)
-    assign shifted_sum = sum >>> 3;
+    //assign shifted_sum = sum >>> 3;
     q_convert #(
         .IN_I(`DOT_I), 
         .IN_F(`DOT_F), 
         .OUT_I(`SCORE_I), 
         .OUT_F(`SCORE_F)
     ) scale_conv_inst (
-        .in(shifted_sum),
-        .out(s_out)
+        .in(sum), //shifted_sum
+        .out(sum_conv) //s_out
     );
+
+    assign s_out = sum_conv >>> 3;
 
 endmodule

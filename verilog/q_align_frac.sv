@@ -13,23 +13,6 @@ module q_align_frac #(
     
     logic signed [W_OUT-1:0] temp;
 
-    // always_comb begin
-    //     // Same number of fractional bits → sign extend only
-    //     if (OUT_F == IN_F) begin
-    //         temp = in;
-
-    //     // Need MORE fractional bits → LEFT SHIFT
-    //     end else if (OUT_F > IN_F) begin
-    //         temp = {in, {(OUT_F-IN_F){1'b0}}};
-
-    //     // Need FEWER fractional bits → RIGHT SHIFT
-    //     end else begin // OUT_F < IN_F
-    //         temp = (in >>> (IN_F-OUT_F));
-    //     end
-
-    //     out = temp;
-    // end
-
     generate 
         // Same number of fractional bits → sign extend only
         if (OUT_F == IN_F) begin
@@ -40,8 +23,33 @@ module q_align_frac #(
             assign temp = {in, {(OUT_F-IN_F){1'b0}}};
 
         // Need FEWER fractional bits → RIGHT SHIFT
+        //This is where rounding occurs if enabled
         end else begin // OUT_F < IN_F
-            assign temp = (in >>> (IN_F-OUT_F));
+            if(`ROUNDING) begin
+                //Perform rounding by adding a bias term with values extended by 1 bit to 
+                //prevent overflow/wrap around, and then saturate
+                logic signed [W_IN:0] in_ext;
+                assign in_ext = {in[W_IN-1], in};
+
+                logic signed [W_IN:0] bias;
+                assign bias = (W_IN+1)'(1) << ((IN_F-OUT_F)-1);
+
+                logic signed [W_IN:0] sum_wide;
+                assign sum_wide = in_ext + bias;
+
+                logic signed [W_IN:0] shifted_wide;
+                assign shifted_wide = (sum_wide >>> (IN_F-OUT_F));
+
+                q_saturate #(
+                    .W_OUT(W_OUT),
+                    .W_IN(W_IN+1)
+                ) round_sat (
+                    .in(shifted_wide),
+                    .out(temp)
+                );
+            end else begin
+                assign temp = (in >>> (IN_F-OUT_F));
+            end
         end
     endgenerate
 
