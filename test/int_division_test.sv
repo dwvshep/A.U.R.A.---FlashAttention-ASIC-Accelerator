@@ -5,7 +5,7 @@ module int_division_tb;
     // --------------------------------------------------------
     // Parameters
     // --------------------------------------------------------
-    localparam int INT_W = 17;   // Q9.8
+    localparam int INT_W = 17;   // Q9.7
     localparam int FRAC_IN = 8;  // Q9.8 has 8 fractional bits
     localparam int QUOT_W = 8;   // Q0.7
     localparam int FRAC_OUT = 7; // Q0.7 has 7 fractional bits
