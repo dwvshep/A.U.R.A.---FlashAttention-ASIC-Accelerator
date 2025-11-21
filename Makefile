@@ -92,7 +92,7 @@ synth/int_division.vg: $(DIVISION_FILES)
 AURA_HEADERS = include/sys_defs.svh
 
 # tb/cpu_test.sv is implicit
-AURA_TESTBENCH = tb/mem.sv 
+AURA_TESTBENCH = test/mem.sv 
 
 # verilog/cpu.sv is implicit
 AURA_SOURCES = verilog/AURA.sv \

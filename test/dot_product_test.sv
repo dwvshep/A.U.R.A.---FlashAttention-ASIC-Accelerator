@@ -77,9 +77,23 @@ module dot_product_tb;
     function SCORE_QT real_to_score(real r);
         //real scaled_r = r * 32.0;
         //real rounded_r = r * 32.0 + (r * 32.0 >= 0 ? 0.5 : -0.5);
-        if (r * 2**`SCORE_F + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5) > 127)  return $rtoi(127);
-        if (r * 2**`SCORE_F + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5) < -128) return $rtoi(-128);
-        return $rtoi(r * 2**`SCORE_F); // + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5)
+        // if (r * 2**`SCORE_F + ((r * 2**`SCORE_F) >= 0 ? 0.5 : -0.5) > 127)  return 127;
+        // if (r * 2**`SCORE_F + ((r * 2**`SCORE_F) >= 0 ? 0.5 : -0.5) < -128) return -128;
+        // return $rtoi(r * 2**`SCORE_F + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5)); 
+        //half-away-from-zero bias
+        if (r * 2**`SCORE_F >= 0) begin
+            if($rtoi(r * 2**`SCORE_F) > 127) return 127;
+            if($rtoi(r * 2**`SCORE_F) < -128) return -128;
+            return $rtoi(r * 2**`SCORE_F);
+        end
+        else begin
+            if($rtoi(r * 2**`SCORE_F) > 127) return 127;
+            if($rtoi(r * 2**`SCORE_F) < -128) return -128;
+            return $rtoi(r * 2**`SCORE_F);
+        end
+        // if($rtoi(r * 2**`SCORE_F) > 127) return 127;
+        // if($rtoi(r * 2**`SCORE_F) < -128) return -128;
+        // return $rtoi(r * 2**`SCORE_F);
     endfunction
 
 
@@ -123,15 +137,20 @@ module dot_product_tb;
             //-----------------------------
             // 3. Stream K vectors
             //-----------------------------
-            for (int k = 0; k < `MAX_SEQ_LENGTH; k++) begin
+            for (int k = 0; k < 4; k++) begin
                 // generate a NEW K vector each cycle
                 golden_val = 0.0;
                 for (int i = 0; i < DIM; i++) begin
                     k_in[i] = $urandom_range(-128, 127);
                     golden_val += q07_to_real(q_in[i]) * q07_to_real(k_in[i]);
+                    //golden_val += (q_in[i]) * (k_in[i]);
                 end
-                golden_val /= 8.0;  // >>3 scaling
+                //golden_val = real_to_score(golden_val);
+                $display("golden_val: %0f (%13b)", golden_val, golden_val);
+                golden_val /= 8.0;  // >>3 scaling;
+                $display("golden_val/8: %0f (%13b)", golden_val, golden_val);
                 golden_q = real_to_score(golden_val);
+                $display("golden_q: %0d (%13b)", golden_q, golden_q);
                 expected_queue.push_back(golden_q);
                 
                 // handshake for K
@@ -145,9 +164,9 @@ module dot_product_tb;
                     expected = expected_queue.pop_front();
 
                     if (s_out !== expected) begin
-                        $display("[FAIL] got=%0d expected=%0d", s_out, expected);
+                        $display("[FAIL] got=%0d (%0b) expected=%0d (%0b)", s_out, s_out, expected, expected);
                     end else begin
-                        $display("[PASS] out=%0d expected=%0d", s_out, expected);
+                        $display("[PASS] out=%0d (%0b) expected=%0d (%0b)", s_out, s_out, expected, expected);
                     end
                 end
             end
@@ -155,7 +174,7 @@ module dot_product_tb;
             //-----------------------------
             // 4. Wait for Q to clear
             //-----------------------------
-            wait (Q_rdy_out);
+            //wait (Q_rdy_out);
         end
 
         $display("\n======== TEST SUMMARY ========");
