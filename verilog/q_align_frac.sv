@@ -34,11 +34,8 @@ module q_align_frac #(
                 logic signed [W_IN:0] abs_bias;
                 assign abs_bias = (W_IN+1)'(1) << ((IN_F-OUT_F)-1);
 
-                logic signed [W_IN:0] bias;
-                assign bias = (in_ext[W_IN] == 0) ? abs_bias : -abs_bias; // Use sign bit to choose bias sign
-
                 logic signed [W_IN:0] sum_wide;
-                assign sum_wide = in_ext + bias;
+                assign sum_wide = in_ext + abs_bias;
 
                 logic signed [W_IN:0] shifted_wide;
                 assign shifted_wide = (sum_wide >>> (IN_F-OUT_F));

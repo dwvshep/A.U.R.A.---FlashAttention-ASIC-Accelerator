@@ -23,7 +23,7 @@ module dot_product (
     input Q_VECTOR_T q_in,
     input K_VECTOR_T k_in,
     input V_VECTOR_T v_in,
-    output SCORE_QT s_out,
+    output EXPMUL_DIFF_IN_QT s_out,
     output V_VECTOR_T v_out
 );
 
@@ -46,13 +46,10 @@ module dot_product (
     assign V_rdy_out = !valid_v || (all_valid && reduction_rdy);
 
     //Internal Data signals
-    // logic signed [W_PROD-1:0] products [LEN];
-    // logic signed [W_SUM-1:0]  sum;
     PRODUCT_QT products [`MAX_EMBEDDING_DIM];
     INTERMEDIATE_PRODUCT_QT intermediate_products [`MAX_EMBEDDING_DIM];
     DOT_QT sum;
-    //DOT_QT shifted_sum;
-    SCORE_QT sum_conv;
+    DOT_QT shifted_sum;
 
     //Latch Q input
     always_ff @(posedge clk) begin
@@ -75,20 +72,20 @@ module dot_product (
         end
         // $display("valid_q: %0b", valid_q);
         // $display("row_counter: %0d", row_counter);
-        for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
-            $display("q[%0d]: %8b OR %8f",
-            i, q[i], q[i]/128.0);
-        end
-        for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
-            $display("k[%0d]: %8b OR %8f",
-            i, k[i], k[i]/128.0);
-        end
-        for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
-            $display("inter_prod[%0d]: %16b OR %16f",
-            i, intermediate_products[i], intermediate_products[i]/(2.0**14));
-        end
-        $display("Sum: %20b", sum);
-        $display("Sum_conv: %13b", sum_conv);
+        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+        //     $display("q[%0d]: %8b OR %8f",
+        //     i, q[i], q[i]/128.0);
+        // end
+        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+        //     $display("k[%0d]: %8b OR %8f",
+        //     i, k[i], k[i]/128.0);
+        // end
+        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+        //     $display("inter_prod[%0d]: %16b OR %16f",
+        //     i, intermediate_products[i], intermediate_products[i]/(2.0**14));
+        // end
+        // $display("Sum: %20b", sum);
+        //$display("Sum_conv: %13b", sum_conv);
     end
 
     //Latch K inputs
@@ -160,30 +157,15 @@ module dot_product (
     );
 
     //scale by root(dk)
-    //assign shifted_sum = sum >>> 3;
+    assign shifted_sum = sum >>> 3;
     q_convert #(
         .IN_I(`DOT_I), 
         .IN_F(`DOT_F), 
-        .OUT_I(`SCORE_I), 
-        .OUT_F(`SCORE_F)
+        .OUT_I(`EXPMUL_DIFF_IN_I), 
+        .OUT_F(`EXPMUL_DIFF_IN_F)
     ) scale_conv_inst (
-        .in(sum), //shifted_sum
-        .out(sum_conv) //s_out
+        .in(shifted_sum), //shifted_sum
+        .out(s_out) //s_out
     );
-
-    assign s_out = sum_conv >>> 3;
-
-    // assign shifted_sum = sum >>> 3;
-    // q_convert #(
-    //     .IN_I(`DOT_I), 
-    //     .IN_F(`DOT_F), 
-    //     .OUT_I(`SCORE_I), 
-    //     .OUT_F(`SCORE_F)
-    // ) scale_conv_inst (
-    //     .in(shifted_sum), //shifted_sum
-    //     .out(s_out) //s_out
-    // );
-
-    //assign s_out = sum_conv >>> 3;
 
 endmodule

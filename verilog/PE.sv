@@ -25,10 +25,10 @@ module PE(
     V_VECTOR_T v_vector_delayed;
     V_VECTOR_T v_vector_double_delayed;
     STAR_VECTOR_T v_star;
-    SCORE_QT score;
-    SCORE_QT score_delayed;
-    SCORE_QT max_score;
-    SCORE_QT max_score_prev;
+    EXPMUL_DIFF_IN_QT score;
+    EXPMUL_DIFF_IN_QT score_delayed;
+    EXPMUL_DIFF_IN_QT max_score;
+    EXPMUL_DIFF_IN_QT max_score_prev;
     STAR_VECTOR_T exp_o_vector;
     STAR_VECTOR_T exp_v_vector;
     STAR_VECTOR_T output_vector;

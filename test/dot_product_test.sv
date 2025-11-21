@@ -25,7 +25,7 @@ module dot_product_tb;
     // logic signed [SCORE_W-1:0] s_out;
     Q_VECTOR_T q_in;
     K_VECTOR_T k_in;
-    SCORE_QT s_out;
+    EXPMUL_DIFF_IN_QT s_out;
     
 
     // --------------------------------------------------------
@@ -74,22 +74,22 @@ module dot_product_tb;
     endfunction
 
     // Convert real to SCORE_QT (signed 13-bit)
-    function SCORE_QT real_to_score(real r);
+    function EXPMUL_DIFF_IN_QT real_to_score(real r);
         //real scaled_r = r * 32.0;
         //real rounded_r = r * 32.0 + (r * 32.0 >= 0 ? 0.5 : -0.5);
         // if (r * 2**`SCORE_F + ((r * 2**`SCORE_F) >= 0 ? 0.5 : -0.5) > 127)  return 127;
         // if (r * 2**`SCORE_F + ((r * 2**`SCORE_F) >= 0 ? 0.5 : -0.5) < -128) return -128;
         // return $rtoi(r * 2**`SCORE_F + (r * 2**`SCORE_F >= 0 ? 0.5 : -0.5)); 
         //half-away-from-zero bias
-        if (r * 2**`SCORE_F >= 0) begin
-            if($rtoi(r * 2**`SCORE_F) > 127) return 127;
-            if($rtoi(r * 2**`SCORE_F) < -128) return -128;
-            return $rtoi(r * 2**`SCORE_F);
+        if (r * 2**`EXPMUL_DIFF_IN_F >= 0) begin
+            if($rtoi(r * 2**`EXPMUL_DIFF_IN_F + 0.5) > 127) return 127;
+            if($rtoi(r * 2**`EXPMUL_DIFF_IN_F + 0.5) < -128) return -128;
+            return $rtoi(r * 2**`EXPMUL_DIFF_IN_F + 0.5);
         end
         else begin
-            if($rtoi(r * 2**`SCORE_F) > 127) return 127;
-            if($rtoi(r * 2**`SCORE_F) < -128) return -128;
-            return $rtoi(r * 2**`SCORE_F);
+            if($rtoi(r * 2**`EXPMUL_DIFF_IN_F - 0.4999) > 127) return 127;
+            if($rtoi(r * 2**`EXPMUL_DIFF_IN_F - 0.4999) < -128) return -128;
+            return $rtoi(r * 2**`EXPMUL_DIFF_IN_F - 0.4999);
         end
         // if($rtoi(r * 2**`SCORE_F) > 127) return 127;
         // if($rtoi(r * 2**`SCORE_F) < -128) return -128;
@@ -98,9 +98,9 @@ module dot_product_tb;
 
 
     int pass_count = 0;
-    SCORE_QT golden_q;
-    SCORE_QT expected_queue[$];  // FIFO
-    SCORE_QT expected;
+    DOT_QT golden_q;
+    EXPMUL_DIFF_IN_QT expected_queue[$];  // FIFO
+    EXPMUL_DIFF_IN_QT expected;
     real golden_row[DIM];      // store golden results for 512 K’s
     real golden_val;
     // --------------------------------------------------------
@@ -137,7 +137,7 @@ module dot_product_tb;
             //-----------------------------
             // 3. Stream K vectors
             //-----------------------------
-            for (int k = 0; k < 4; k++) begin
+            for (int k = 0; k < `MAX_EMBEDDING_DIM; k++) begin
                 // generate a NEW K vector each cycle
                 golden_val = 0.0;
                 for (int i = 0; i < DIM; i++) begin

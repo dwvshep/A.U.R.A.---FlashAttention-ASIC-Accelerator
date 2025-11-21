@@ -12,18 +12,18 @@ module max(
     output rdy_out,
 
     //Data signals
-    input SCORE_QT s_in,
-    input SCORE_QT m_prev_in,
+    input EXPMUL_DIFF_IN_QT s_in,
+    input EXPMUL_DIFF_IN_QT m_prev_in,
     input V_VECTOR_T v_in,
-    output SCORE_QT m_out,
-    output SCORE_QT s_out,
-    output SCORE_QT m_prev_out,
+    output EXPMUL_DIFF_IN_QT m_out,
+    output EXPMUL_DIFF_IN_QT s_out,
+    output EXPMUL_DIFF_IN_QT m_prev_out,
     output V_VECTOR_T v_out
 );
 
     //Internal Pipeline Registers
-    SCORE_QT s;
-    SCORE_QT m_prev;
+    EXPMUL_DIFF_IN_QT s;
+    EXPMUL_DIFF_IN_QT m_prev;
     V_VECTOR_T v;
     logic valid_reg;
 

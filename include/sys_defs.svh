@@ -166,11 +166,7 @@ typedef `Q_TYPE(`EXPMUL_DIFF_OUT_I, `EXPMUL_DIFF_OUT_F) EXPMUL_DIFF_OUT_QT;
 typedef `Q_TYPE(`EXPMUL_DIFF_IN_I, `EXPMUL_DIFF_IN_F) EXPMUL_DIFF_IN_QT;
 //Q4.4
 
-//**Conversion occurs between score and expmul difference**//
-
-//Dot Product scaled score (shift by log2 of root(dk) hardcoded into EXPMUL_DIFF_IN_I)
-typedef `Q_TYPE(`SCORE_I, `SCORE_F) SCORE_QT;
-//Q7.5
+//**Conversion occurs between shifted sum and expmul difference**//
 
 //Dot Product sum
 typedef `Q_TYPE(`DOT_I, `DOT_F) DOT_QT;
