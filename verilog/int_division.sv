@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Signed integer division for Q-format values
 // Inputs:  numerator_in, denominator_in are Q9.7  (DIV_INPUT_QT)
-// Output: quotient_out is Q0.7                   (MEM_QT)
+// Output: quotient_out is Q0.7                   (OUTPUT_VEC_QT)
 // Internally performs:  (abs(num) << 7) / abs(den)
 // Uses non-restoring division for iterative quotient generation
 // -----------------------------------------------------------------------------
@@ -21,7 +21,7 @@ module int_division(
     // Data signals
     input  DIV_INPUT_QT numerator_in,
     input  DIV_INPUT_QT denominator_in,
-    output MEM_QT           quotient_out
+    output OUTPUT_VEC_QT           quotient_out
 );
 
     localparam int DIV_INPUT_W = $bits(DIV_INPUT_QT);
@@ -44,8 +44,8 @@ module int_division(
     // -------------------------------------------------------------------------
     // Output quotient (Q0.7 magnitude + signed output)
     // -------------------------------------------------------------------------
-    MEM_QT abs_quotient;
-    MEM_QT quotient_signed;
+    OUTPUT_VEC_QT abs_quotient;
+    OUTPUT_VEC_QT quotient_signed;
 
     // -------------------------------------------------------------------------
     // Handshake
@@ -106,7 +106,7 @@ module int_division(
 
     // Divider working registers
     logic signed [DIV_INPUT_W:0] rem;   // remainder with sign bit
-    MEM_QT q_reg;                            // Q0.7 working quotient bits
+    OUTPUT_VEC_QT q_reg;                            // Q0.7 working quotient bits
     DIV_INPUT_QT divd;                   // |numerator| << 7
     DIV_INPUT_QT divs;                   // |denominator|
     logic [$clog2(DIV_INPUT_W+1)-1:0] bit_idx;

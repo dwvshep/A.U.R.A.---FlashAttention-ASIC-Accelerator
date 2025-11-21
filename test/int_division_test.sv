@@ -6,7 +6,7 @@ module int_division_tb;
     // Parameters
     // --------------------------------------------------------
     localparam int INT_W = 17;   // Q9.7
-    localparam int FRAC_IN = 8;  // Q9.8 has 8 fractional bits
+    localparam int FRAC_IN = 7;  // Q9.8 has 8 fractional bits
     localparam int QUOT_W = 8;   // Q0.7
     localparam int FRAC_OUT = 7; // Q0.7 has 7 fractional bits
     localparam int NUM_TESTS = 100;
@@ -33,7 +33,7 @@ module int_division_tb;
     // --------------------------------------------------------
     // Instantiate DUT
     // --------------------------------------------------------
-    dot_product dut (
+    int_division dut (
         .clk(clk),
         .rst(rst),
 
