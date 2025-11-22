@@ -96,19 +96,24 @@ module dot_product_tb;
         // return $rtoi(r * 2**`SCORE_F);
     endfunction
 
-
-    int pass_count = 0;
+    int my_seed = 123;
+    int vector_pass_count = 0;
+    int test_pass_count = 0;
+    int drain_cycles;
     DOT_QT golden_q;
     EXPMUL_DIFF_IN_QT expected_queue[$];  // FIFO
     EXPMUL_DIFF_IN_QT expected;
     real golden_row[DIM];      // store golden results for 512 K’s
     real golden_val;
+
     // --------------------------------------------------------
     // Reset --> TEST
     // --------------------------------------------------------
     initial begin : TEST_MAIN
+        void'($urandom(my_seed));   // sets the global RNG seed
+
         $display("QTYPES:");
-        $display("SCORE_QT: Q(%0d,%0d)", `SCORE_I, `SCORE_F);
+        $display("EXPMUL_DIFF_IN_QT: Q(%0d,%0d)", `EXPMUL_DIFF_IN_I, `EXPMUL_DIFF_IN_F);
         $display("PRODUCT_QT: Q(%0d,%0d)", `PRODUCT_I, `PRODUCT_F);
         $display("INTERMEDIATE_PRODUCT_QT: Q(%0d,%0d)", `INTERMEDIATE_PRODUCT_I, `INTERMEDIATE_PRODUCT_F);
         $display("DOT_QT: Q(%0d,%0d)", `DOT_I, `DOT_F);
@@ -137,7 +142,7 @@ module dot_product_tb;
             //-----------------------------
             // 3. Stream K vectors
             //-----------------------------
-            for (int k = 0; k < `MAX_EMBEDDING_DIM; k++) begin
+            for (int k = 0; k < `MAX_SEQ_LENGTH; k++) begin
                 // generate a NEW K vector each cycle
                 golden_val = 0.0;
                 for (int i = 0; i < DIM; i++) begin
@@ -145,7 +150,6 @@ module dot_product_tb;
                     golden_val += q07_to_real(q_in[i]) * q07_to_real(k_in[i]);
                     //golden_val += (q_in[i]) * (k_in[i]);
                 end
-                //golden_val = real_to_score(golden_val);
                 $display("golden_val: %0f (%13b)", golden_val, golden_val);
                 golden_val /= 8.0;  // >>3 scaling;
                 $display("golden_val/8: %0f (%13b)", golden_val, golden_val);
@@ -166,19 +170,49 @@ module dot_product_tb;
                     if (s_out !== expected) begin
                         $display("[FAIL] got=%0d (%0b) expected=%0d (%0b)", s_out, s_out, expected, expected);
                     end else begin
+                        vector_pass_count++;
                         $display("[PASS] out=%0d (%0b) expected=%0d (%0b)", s_out, s_out, expected, expected);
                     end
                 end
             end
 
+            drain_cycles = 1 + `NUM_REDUCE_STAGES; // worst-case latency of pipeline
+            while (expected_queue.size() > 0 && drain_cycles > 0) begin
+                @(posedge clk);
+
+                if (vld_out) begin
+                    expected = expected_queue.pop_front();
+                    if (s_out !== expected) begin
+                        $display("[FAIL] got=%0d (%0b) expected=%0d (%0b)",
+                                s_out, s_out, expected, expected);
+                    end else begin
+                        vector_pass_count++;
+                        $display("[PASS] out=%0d (%0b) expected=%0d (%0b)",
+                                s_out, s_out, expected, expected);
+                    end
+                end
+
+                drain_cycles--;
+            end
+
+            if (expected_queue.size() > 0) begin
+                $display("[ERROR] Pipeline drained but %0d results still pending!",
+                        expected_queue.size());
+            end
+
+
             //-----------------------------
             // 4. Wait for Q to clear
             //-----------------------------
-            //wait (Q_rdy_out);
+            wait (Q_rdy_out);
+            if (vector_pass_count == `MAX_SEQ_LENGTH) begin
+                test_pass_count++;
+                $display("[TEST_PASS]");
+            end
         end
 
         $display("\n======== TEST SUMMARY ========");
-        $display("Pass: %0d / %0d", pass_count, NUM_TESTS);
+        $display("Pass: %0d / %0d", test_pass_count, NUM_TESTS);
         $display("==============================\n");
 
         $finish;

@@ -84,8 +84,9 @@ module dot_product (
         //     $display("inter_prod[%0d]: %16b OR %16f",
         //     i, intermediate_products[i], intermediate_products[i]/(2.0**14));
         // end
-        // $display("Sum: %20b", sum);
-        //$display("Sum_conv: %13b", sum_conv);
+        $display("sum: %20b", sum);
+        $display("shifted_sum: %20b", shifted_sum);
+        $display("s_out: %9b", s_out);
     end
 
     //Latch K inputs
