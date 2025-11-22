@@ -100,6 +100,7 @@ typedef `Q_TYPE(`OUTPUT_VEC_I, `OUTPUT_VEC_F) OUTPUT_VEC_QT;
 //Intermediate Fraction bit widths
 `define DIV_INPUT_F (`OUTPUT_VEC_F + `ROUNDING)
 `define EXPMUL_VEC_F ($clog2(`MAX_SEQ_LENGTH) + `INPUT_VEC_F + `ROUNDING)
+`define EXPMUL_SHIFT_STAGE_F `EXPMUL_VEC_F + 6
 
 `define EXPMUL_EXP_F 0
 `define EXP_LOG2E_OUT_F (`ROUNDING + 1)
@@ -121,9 +122,13 @@ typedef `Q_TYPE(`OUTPUT_VEC_I, `OUTPUT_VEC_F) OUTPUT_VEC_QT;
 `define EXP_LOG2E_IN_I `EXPMUL_DIFF_OUT_I
 `define EXP_LOG2E_OUT_I (`EXP_LOG2E_IN_I + 1)
 `define EXPMUL_EXP_I 4
+`define EXPMUL_SHIFT_STAGE_I ($clog2(`MAX_SEQ_LENGTH) + `INPUT_VEC_I)
 
-`define EXPMUL_VEC_I ($clog2(`MAX_SEQ_LENGTH) + `INPUT_VEC_I)
+
+`define EXPMUL_VEC_I `EXPMUL_SHIFT_STAGE_I
 `define DIV_INPUT_I ($clog2(`MAX_SEQ_LENGTH) + `INPUT_VEC_I)
+
+
 
 //Intermediate QTypes
 //Default configurations are shown in comments below each typedef
@@ -139,6 +144,9 @@ typedef `Q_TYPE(`DIV_INPUT_I, `DIV_INPUT_F) DIV_INPUT_QT;
 //Expmul vectors (accumulated over the sequence length)
 typedef `Q_TYPE(`EXPMUL_VEC_I, `EXPMUL_VEC_F) EXPMUL_VEC_QT;
 //Q9.17
+
+typedef `Q_TYPE(`EXPMUL_SHIFT_STAGE_I, `EXPMUL_SHIFT_STAGE_F) EXPMUL_SHIFT_STAGE_QT;
+//Q9.23
 
 //Expmul clipped exponent (clipped to a reasonable integer range [-16, 0])
 typedef `Q_TYPE(`EXPMUL_EXP_I, `EXPMUL_EXP_F) EXPMUL_EXP_QT;
@@ -194,6 +202,8 @@ typedef INPUT_VEC_QT [`MAX_EMBEDDING_DIM] V_VECTOR_T;
 typedef OUTPUT_VEC_QT [`MAX_EMBEDDING_DIM] O_VECTOR_T;
 
 typedef EXPMUL_VEC_QT [`MAX_EMBEDDING_DIM+1] STAR_VECTOR_T;
+
+typedef EXPMUL_SHIFT_STAGE_QT [`MAX_EMBEDDING_DIM+1] EXPMUL_SHIFT_VECTOR_T;
 
 
 

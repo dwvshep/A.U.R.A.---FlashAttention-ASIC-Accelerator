@@ -12,21 +12,21 @@ module expmul(
     output rdy_out,
 
     //Data signals
-    input SCORE_QT m_in,
-    input SCORE_QT m_prev_in,
-    input EXPMUL_VSHIFT_QT o_star_prev_in,
-    input SCORE_QT s_in,
-    input EXPMUL_VSHIFT_QT v_star_in,
-    output EXPMUL_VSHIFT_QT exp_v_out,
-    output EXPMUL_VSHIFT_QT exp_o_out
+    input EXPMUL_DIFF_IN_QT m_in,
+    input EXPMUL_DIFF_IN_QT m_prev_in,
+    input STAR_VECTOR_T o_star_prev_in,
+    input EXPMUL_DIFF_IN_QT s_in,
+    input STAR_VECTOR_T v_star_in,
+    output STAR_VECTOR_T exp_v_out,
+    output STAR_VECTOR_T exp_o_out
 );
 
     //Internal Pipeline Registers
-    SCORE_QT m,
-    SCORE_QT m_prev;
-    SCORE_QT s;
-    EXPMUL_VSHIFT_QT o_star_prev;
-    EXPMUL_VSHIFT_QT v_star;
+    EXPMUL_DIFF_IN_QT m;
+    EXPMUL_DIFF_IN_QT m_prev;
+    EXPMUL_DIFF_IN_QT s;
+    STAR_VECTOR_T o_star_prev;
+    STAR_VECTOR_T v_star;
     logic expmul_o_valid, expmul_o_rdy, expmul_v_valid, expmul_v_rdy;
 
     assign vld_out = expmul_o_valid && expmul_v_valid;
@@ -98,7 +98,7 @@ module expmul(
         .b_in(m_in),
         .v_in(v_star_in),
         .v_out(exp_v_out)
-    // );
+    );
 
 
 endmodule
