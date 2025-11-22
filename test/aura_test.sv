@@ -103,7 +103,6 @@ module testbench;
         .mem2proc_data            (mem2proc_data),
         .mem2proc_data_tag        (mem2proc_data_tag)
     );
-
     
 
     // Generate System Clock
@@ -112,18 +111,9 @@ module testbench;
         clock = ~clock;
     end
 
-    // generate
-    // genvar i;
-    //     for(i = 0; i < `N; ++i) begin
-    //         logic [63:0] mem_block;
-    //         assign mem_block = memory.unified_memory[PCs[i][15:3]];
-    //         assign insts[i] = PCs[i][2] ? mem_block[63:32] : mem_block[31:0];
-    //     end
-    // endgenerate
-
     initial begin
-        $dumpfile("../cpu.vcd");
-        $dumpvars(0, testbench.verisimpleV);
+        $dumpfile("../aura.vcd");
+        $dumpvars(0, testbench.AURA_dut);
         $display("\n---- Starting CPU Testbench ----\n");
 
         // set paramterized strings, see comment at start of module
@@ -196,8 +186,6 @@ module testbench;
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
 
-            // TODO: change error status to done flag
-
             // stop the processor
             if (done || clock_count > `TB_MAX_CYCLES) begin
 
@@ -225,7 +213,6 @@ module testbench;
             $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
             $fdisplay(out_fileno, "Display starts at Base Addr: %x", O_BASE)
             $fdisplay(out_fileno, "@@@");
-            showing_data = 0;
 
             for(int k = 0; k < ROW; k++) begin
                 $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, updated_memory[O_IDX + k], updated_memory[O_IDX + k]);

@@ -27,13 +27,13 @@ void generate_mem(const std::string &filename, int rows) {
 }
 
 int main() {
-    const int ROWS = 512;
+    const int ROWS = 512*8;
 
-    std::filesystem::create_directories("output");
+    std::filesystem::create_directories("../mem");
 
-    generate_mem("output/Q.mem", ROWS);
-    generate_mem("output/K.mem", ROWS);
-    generate_mem("output/V.mem", ROWS);
+    generate_mem("../mem/Q.mem", ROWS);
+    generate_mem("../mem/K.mem", ROWS);
+    generate_mem("../mem/V.mem", ROWS);
 
     return 0;
 }
