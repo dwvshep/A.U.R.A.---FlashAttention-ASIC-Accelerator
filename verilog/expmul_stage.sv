@@ -32,10 +32,10 @@ module expmul_stage (
     output rdy_out,
 
     //Data signals
-    input EXPMUL_DIFF_IN_QT a_in, //Q4.3
-    input EXPMUL_DIFF_IN_QT b_in, //Q4.3
-    input STAR_VECTOR_T v_in, //Q9.8
-    output STAR_VECTOR_T v_out //Q9.8,
+    input EXPMUL_DIFF_IN_QT a_in, //Q4.4
+    input EXPMUL_DIFF_IN_QT b_in, //Q4.4
+    input STAR_VECTOR_T v_in, //Q9.17
+    output STAR_VECTOR_T v_out //Q9.17,
 );
 
     //Internal Pipeline Registers

@@ -97,7 +97,7 @@ module tb_expmul;
     endfunction
 
     // Convert a real number to fixed-point representation
-    function automatic logic signed [8:0] real_to_fixed
+    function automatic logic signed [26:0] real_to_fixed
     (
         input real r,                  // input real number
         input int FRACTIONAL_BITS     // number of fractional bits
@@ -117,8 +117,19 @@ module tb_expmul;
         end
     endfunction
 
-    
+    function automatic int round_toward_zero_half(real val);
+        if (val >= 0.0) begin
+            // Positive: round normally
+            return int'(val + 0.5);
+        end else begin
+            // Negative: round toward zero
+            return int'(val - 0.5);
+        end
+    endfunction
 
+    function automatic int pow2(input int n);
+        return (1 << n);
+    endfunction
     // -------------------------------------------------------------
     // Transaction sender (handles ready/valid correctly)
     // -------------------------------------------------------------
@@ -186,9 +197,11 @@ module tb_expmul;
 
     STAR_VECTOR_T o_prev_rand;
     STAR_VECTOR_T v_prev_rand;
-    logic [8:0] m_send;
-    logic [8:0] m_prev_send;
-    logic [8:0] s_send;
+    logic signed [8:0] m_send;
+    logic signed [8:0] m_prev_send;
+    logic signed [8:0] s_send;
+    int count;
+
     // -------------------------------------------------------------
     // Main test sequence
     // -------------------------------------------------------------
@@ -204,20 +217,28 @@ module tb_expmul;
         rand_vector(o_prev_rand);
         rand_vector(v_prev_rand);
         $display("v_prev_rand[1]: %d", v_prev_rand[1]);
-        for (s_send = 16; s_send < 32; s_send++)begin
-            for (m_prev_send = s_send; m_prev_send < 32; m_prev_send++)begin
-                m_send = m_prev_send;
+        count = 0;
+        // for (s_send = -256; s_send < 255; s_send++)begin
+        //     for (m_prev_send = s_send; m_prev_send < 255; m_prev_send++)begin
+            for (int a = 0; a < 256; a++) begin
+                    m_prev_send = $urandom_range(-256, 255);
+                    s_send = $urandom_range(-256, 255);
+                    if (m_prev_send > s_send) begin
+                        m_send = $urandom_range(m_prev_send, 255);
+                    end else begin
+                        m_send = $urandom_range(s_send, 255);
+                    end
                 send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);
-                $display("power thing: %f", 2.0**((q44_to_real(s_send)-q44_to_real(m_send)) * 1.442695));
-                $display("v_prev_rand[1]: %f", v_prev_rand[1]/real'(1<<17));
                 #25;
-                if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**((q44_to_real(s_send)-q44_to_real(m_send)) * 1.442695)) > 1e-3) begin
+                $display("power thing: %f", (round_toward_zero_half((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
+                $display("v_prev_rand[1]: %f", v_prev_rand[1]/real'(1<<17));
+                // if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**(round_toward_zero_half(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)))) > 1e-3) begin
                     $display("s_send: %f, m_send: %f\n", q44_to_real(s_send), q44_to_real(m_send));
-                    $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/real'(1<<17) * 2.0**((q44_to_real(s_send)-q44_to_real(m_send)) * 1.442695)); 
+                    $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/real'(1<<17) * 2.0**round_toward_zero_half(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0))); 
                     $display("Actual v_out_1 value: %f\n", q917_to_real(exp_v_out[1]));
-                end
+                    count++;
+                // end
             end
-        end
         // send_tx(real_to_fixed(0.625, 4), real_to_fixed(0.25, 4), real_to_fixed(0.25, 4), v_prev_rand, o_prev_rand);
         // $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/(1<<17) * 2.0**((0.25-0.625) * 1.442695)); 
         // #50;
