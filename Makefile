@@ -76,7 +76,7 @@ build/q_convert.simv: $(Q_CONVERT_FILES)
 build/q_convert.cov: $(Q_CONVERT_FILES)
 synth/q_convert.vg: $(Q_CONVERT_FILES)
 
-DIVISION_FILES = verilog/int_division.sv
+DIVISION_FILES = verilog/int_division.sv verilog/q_convert.sv verilog/q_sign_extend.sv verilog/q_saturate.sv verilog/q_align_frac.sv verilog/q_align_int.sv
 build/int_division.simv: $(DIVISION_FILES)
 build/int_division.cov: $(DIVISION_FILES)
 synth/int_division.vg: $(DIVISION_FILES)

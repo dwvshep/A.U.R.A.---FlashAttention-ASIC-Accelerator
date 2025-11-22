@@ -21,10 +21,18 @@ module int_division(
     // Data signals
     input  DIV_INPUT_QT numerator_in,
     input  DIV_INPUT_QT denominator_in,
-    output OUTPUT_VEC_QT           quotient_out
+    output OUTPUT_VEC_QT quotient_out
 );
 
     localparam int DIV_INPUT_W = $bits(DIV_INPUT_QT);
+
+    // Divider working registers
+    logic signed [DIV_INPUT_W:0] rem;   // remainder with sign bit
+    logic signed [DIV_INPUT_W:0] rem_next;
+    OUTPUT_VEC_QT q_reg;                            // Q0.7 working quotient bits
+    DIV_INPUT_QT divd;                   // |numerator| << 7
+    DIV_INPUT_QT divs;                   // |denominator|
+    logic [$clog2(DIV_INPUT_W+1)-1:0] bit_idx;
 
     // -------------------------------------------------------------------------
     // Internal control registers
@@ -44,8 +52,11 @@ module int_division(
     // -------------------------------------------------------------------------
     // Output quotient (Q0.7 magnitude + signed output)
     // -------------------------------------------------------------------------
-    OUTPUT_VEC_QT abs_quotient;
-    OUTPUT_VEC_QT quotient_signed;
+    
+    //OUTPUT_VEC_QT abs_quotient;
+    logic [`DIV_INPUT_F-1:0] abs_quotient;
+
+    logic [`DIV_INPUT_F:0] quotient_signed;
 
     // -------------------------------------------------------------------------
     // Handshake
@@ -54,6 +65,17 @@ module int_division(
     // -------------------------------------------------------------------------
     assign vld_out = valid_reg;
     assign rdy_out = !busy && (rdy_in || !valid_reg);
+
+    // -------------------------------------------------------------------------
+    // Divider FSM States
+    // -------------------------------------------------------------------------
+    typedef enum logic [1:0] {
+        DIV_IDLE,
+        DIV_RUN,
+        DIV_DONE
+    } div_state_e;
+
+    div_state_e state;
 
     // -------------------------------------------------------------------------
     // INPUT LATCH: capture sign and magnitude when new transaction arrives
@@ -91,25 +113,16 @@ module int_division(
                 busy <= 1'b0;
             end
         end
+        $display("state: %0b", state); // DEBUG
+        $display("divd: %0d, divs: %0d, bit_idx: %0d", divd, divs, bit_idx); // DEBUG
+        $display("rem: %0d, rem_next: %0d", rem, rem_next); // DEBUG
+        $display("quotient_out: %0d, q_reg: %0d, abs_quotient: %0d, quotient_signed: %0d\n", quotient_out, q_reg, abs_quotient, quotient_signed); // DEBUG, 
+        
     end
 
-    // -------------------------------------------------------------------------
-    // Divider FSM States
-    // -------------------------------------------------------------------------
-    typedef enum logic [1:0] {
-        DIV_IDLE,
-        DIV_RUN,
-        DIV_DONE
-    } div_state_e;
 
-    div_state_e state;
 
-    // Divider working registers
-    logic signed [DIV_INPUT_W:0] rem;   // remainder with sign bit
-    OUTPUT_VEC_QT q_reg;                            // Q0.7 working quotient bits
-    DIV_INPUT_QT divd;                   // |numerator| << 7
-    DIV_INPUT_QT divs;                   // |denominator|
-    logic [$clog2(DIV_INPUT_W+1)-1:0] bit_idx;
+    
 
     // -------------------------------------------------------------------------
     // DIVIDER FSM
@@ -138,7 +151,7 @@ module int_division(
                 DIV_IDLE: begin
                     if (busy && !valid_reg && abs_denominator_reg != '0) begin
                         // Init non-restoring division
-                        divd    <= abs_numerator_reg <<< 7;  // scale numerator
+                        divd    <= abs_numerator_reg <<< `DIV_INPUT_F;  // scale numerator
                         divs    <= abs_denominator_reg;
                         rem     <= '0;
                         q_reg   <= '0;
@@ -157,7 +170,6 @@ module int_division(
                 // RUN: iterate through bits
                 // -------------------------------------------------------------
                 DIV_RUN: begin
-                    logic signed [DIV_INPUT_W:0] rem_next;
 
                     // Shift remainder left + inject next input bit
                     rem_next      = rem <<< 1;
@@ -201,12 +213,21 @@ module int_division(
     // Apply sign in two's complement
     // -------------------------------------------------------------------------
     always_comb begin
-        quotient_signed = sign_quotient_reg
+        quotient_signed = {sign_quotient_reg, {sign_quotient_reg
                           ? (~abs_quotient + 1'b1)
-                          :  abs_quotient;
+                          :  abs_quotient}};
     end
 
     // Final output
-    assign quotient_out = quotient_signed;
+    q_convert  #(
+        .IN_I(`OUTPUT_VEC_I),
+        .IN_F(`DIV_INPUT_F),
+        .OUT_I(`OUTPUT_VEC_I),
+        .OUT_F(`OUTPUT_VEC_F)
+    ) div_conv (
+        .in(quotient_signed),
+        .out(quotient_out)
+    );
+    //assign quotient_out = quotient_signed;
 
 endmodule
