@@ -59,7 +59,7 @@ SHELL := $(SHELL) -o pipefail
 
 # ---- Modules to Test ---- #
 
-MODULES = dot_product tree_reduce reduction_step q_convert int_division
+MODULES = dot_product tree_reduce reduction_step q_convert int_division expmul
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(AURA_HEADERS)

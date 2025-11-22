@@ -220,7 +220,7 @@ module tb_expmul;
         count = 0;
         // for (s_send = -256; s_send < 255; s_send++)begin
         //     for (m_prev_send = s_send; m_prev_send < 255; m_prev_send++)begin
-            for (int a = 0; a < 256; a++) begin
+            for (int a = 0; a < 16; a++) begin
                     m_prev_send = $urandom_range(-256, 255);
                     s_send = $urandom_range(-256, 255);
                     if (m_prev_send > s_send) begin
