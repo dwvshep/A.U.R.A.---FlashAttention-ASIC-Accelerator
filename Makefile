@@ -81,6 +81,10 @@ build/int_division.simv: $(DIVISION_FILES)
 build/int_division.cov: $(DIVISION_FILES)
 synth/int_division.vg: $(DIVISION_FILES)
 
+EXPMUL_FILES = verilog/expmul.sv verilog/expmul_stage.sv verilog/q_convert.sv verilog/q_sign_extend.sv verilog/q_saturate.sv verilog/q_align_frac.sv verilog/q_align_int.sv
+build/expmul.simv: $(EXPMUL_FILES)
+build/expmul.cov: $(EXPMUL_FILES)
+synth/expmul.vg: $(EXPMUL_FILES)
 
 #################################
 # ---- Main AURA Definition ---- #
