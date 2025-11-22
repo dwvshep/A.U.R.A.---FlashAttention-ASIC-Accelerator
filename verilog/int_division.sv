@@ -29,7 +29,7 @@ module int_division(
     // Divider working registers
     logic signed [DIV_INPUT_W:0] rem;   // remainder with sign bit
     logic signed [DIV_INPUT_W:0] rem_next;
-    OUTPUT_VEC_QT q_reg;                            // Q0.7 working quotient bits
+    logic [DIV_INPUT_W-2:0] q_reg;                            // Q0.7 working quotient bits
     DIV_INPUT_QT divd;                   // |numerator| << 7
     DIV_INPUT_QT divs;                   // |denominator|
     logic [$clog2(DIV_INPUT_W+1)-1:0] bit_idx;
@@ -54,9 +54,9 @@ module int_division(
     // -------------------------------------------------------------------------
     
     //OUTPUT_VEC_QT abs_quotient;
-    logic [`DIV_INPUT_F-1:0] abs_quotient;
+    logic [DIV_INPUT_W-2:0] abs_quotient;
 
-    logic [`DIV_INPUT_F:0] quotient_signed;
+    logic [DIV_INPUT_W-1:0] quotient_signed;
 
     // -------------------------------------------------------------------------
     // Handshake
@@ -180,7 +180,7 @@ module int_division(
                     else          rem_next = rem_next + {1'b0, divs};
 
                     // Save quotient bit if in Q0.7 range
-                    if (bit_idx < 7)
+                    //if (bit_idx <= 7)
                         q_reg[bit_idx] <= (rem_next >= 0);
 
                     // State update
@@ -220,7 +220,7 @@ module int_division(
 
     // Final output
     q_convert  #(
-        .IN_I(`OUTPUT_VEC_I),
+        .IN_I(`DIV_INPUT_I),
         .IN_F(`DIV_INPUT_F),
         .OUT_I(`OUTPUT_VEC_I),
         .OUT_F(`OUTPUT_VEC_F)

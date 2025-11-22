@@ -72,26 +72,39 @@ module int_division_tb;
     endfunction
 
     // Convert real to DIV_INPUT_QT (round + saturate)
+    //function automatic OUTPUT_VEC_QT real_to_output_vec(real r);
+    //    real scaled = r * real'(1 << `OUTPUT_VEC_F); // r * 2^OUTPUT_VEC_F
+    //    real rounded;
+    //    int q_int;
+//
+    //    //deal with rounding cases
+    //    if(`ROUNDING) begin
+    //        rounded = (scaled >= 0.0) ? (scaled + 0.5) : (scaled - 0.5);
+    //    end else begin
+    //        rounded = scaled;
+    //    end
+//
+    //    //cast to int
+    //    q_int = $rtoi(rounded);
+    //    
+    //    //saturate
+    //    if (q_int > QUOT_MAX)  q_int = QUOT_MAX;
+    //    if (q_int < QUOT_MIN)  q_int = QUOT_MIN;
+    //    
+    //    return OUTPUT_VEC_QT'(q_int);
+    //endfunction
+
     function automatic OUTPUT_VEC_QT real_to_output_vec(real r);
-        real scaled = r * real'(1 << `OUTPUT_VEC_F); // r * 2^OUTPUT_VEC_F
-        real rounded;
-        int q_int;
-
-        //deal with rounding cases
-        if(`ROUNDING) begin
-            rounded = (scaled >= 0.0) ? (scaled + 0.5) : (scaled - 0.5);
-        end else begin
-            rounded = scaled;
+        if (r * 2**`OUTPUT_VEC_F >= 0) begin
+            if($rtoi(r * 2**`OUTPUT_VEC_F + 0.5) > 0) return 0;
+            if($rtoi(r * 2**`OUTPUT_VEC_F + 0.5) < -1) return -1;
+            return $rtoi(r * 2**`OUTPUT_VEC_F + 0.5);
         end
-
-        //cast to int
-        q_int = $rtoi(rounded);
-        
-        //saturate
-        if (q_int > QUOT_MAX)  q_int = QUOT_MAX;
-        if (q_int < QUOT_MIN)  q_int = QUOT_MIN;
-        
-        return OUTPUT_VEC_QT'(q_int);
+        else begin
+            if($rtoi(r * 2**`OUTPUT_VEC_F - 0.4999) > 0) return 0;
+            if($rtoi(r * 2**`OUTPUT_VEC_F - 0.4999) < -1) return -1;
+            return $rtoi(r * 2**`OUTPUT_VEC_F - 0.4999);
+        end
     endfunction
 
     // Convert output_vec to real (to print values if needed)
@@ -203,7 +216,7 @@ module int_division_tb;
             wait (vld_out == 1);
 
             // Sample result on the valid cycle
-            @(posedge clk);
+            //@(posedge clk);
             total_count++;
 
             if (quotient_out === golden_q) begin
@@ -244,31 +257,31 @@ module int_division_tb;
         run_single_test(real_to_div_input(ONE_QIN),     real_to_div_input(2*ONE_QIN)); // 1.0 / 2.0 -> 0.5
         run_single_test(real_to_div_input((3*ONE_QIN)/4), real_to_div_input((3*ONE_QIN)/2)); // 0.75 / 1.5 -> 0.5
         run_single_test(real_to_div_input(ONE_QIN),     real_to_div_input(4*ONE_QIN)); // 1.0 / 4.0 -> 0.25
-        //
-        // --- Random tests ---
-        //for (int t = 0; t < NUM_TESTS; t++) begin
-        //    DIV_INPUT_QT n;
-        //    DIV_INPUT_QT d;
-        //    int ni;
-        //    int di;
-//
-        //    n = $urandom_range(-(2**17), (2**17)-1);
-        //    d = $urandom_range(DEN_MIN, DEN_MAX);
-        //    ni = int'(n);
-        //    di = int'(d);
-//
-        //    // Debug print to verify randomness:
-        //    $display("RANDOM TEST %0d: raw n_i=%0d d_i=%0d  n=%0d d=%0d",
-        //            t, n, d, n, d);   
-//
-        //    run_single_test(n, d);
-        //    //if ($abs(ni) < $abs(di)) begin
-        //    //    run_single_test(n, d);
-        //    //end else begin
-        //    //    //skip this combo? to avoid large quotients
-        //    //    t = t - 1;
-        //    //end
-        //end
+        
+        //--- Random tests ---
+        for (int t = 0; t < NUM_TESTS; t++) begin
+            DIV_INPUT_QT n;
+            DIV_INPUT_QT d;
+            int ni;
+            int di;
+
+            n = $urandom_range(-(2**17), (2**17)-1);
+            d = $urandom_range(DEN_MIN, DEN_MAX);
+            ni = int'(n);
+            di = int'(d);
+
+            // Debug print to verify randomness:
+            $display("RANDOM TEST %0d: raw n_i=%0d d_i=%0d  n=%0d d=%0d",
+                    t, n, d, n, d);   
+
+            run_single_test(n, d);
+            //if ($abs(ni) < $abs(di)) begin
+            //    run_single_test(n, d);
+            //end else begin
+            //    //skip this combo? to avoid large quotients
+            //    t = t - 1;
+            //end
+        end
 
         $display("\n======== DIVISION TEST SUMMARY ========");
         $display("Pass: %0d / %0d", pass_count, total_count);
