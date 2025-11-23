@@ -93,8 +93,8 @@ module AURA(
     );
 
     KSRAM KSRAM_inst (
-        .clock(clk),
-        .reset(rst),
+        .clk(clk),
+        .rst(rst),
         
         .write_enable(ctrl_K_vld),    //Asserted when memory controller is ready to write an entire row
         .read_enable(K_rdy[0]),     //Asserted when all backend PEs are ready to read (can just check the first one)
@@ -106,8 +106,8 @@ module AURA(
     );
 
     VSRAM VSRAM_inst (
-        .clock(clk),
-        .reset(rst),
+        .clk(clk),
+        .rst(rst),
         
         .write_enable(ctrl_V_vld),    //Asserted when memory controller is ready to write an entire row
         .read_enable(V_rdy[0]),     //Asserted when all backend PEs are ready to read (can just check the first one)

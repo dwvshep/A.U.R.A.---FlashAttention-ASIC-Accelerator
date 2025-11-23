@@ -57,8 +57,9 @@ module memory_controller #(
     // Internal vector buffer/state
     // -----------------------------
     Q_VECTOR_T vector_buffer, next_vector_buffer;
-    logic [$clog2(`MAX_SEQ_LENTH)-1:0]       vec_index, next_vec_index, vec_to_fetch, next_vec_to_fetch;     // which vector within the phase
+    logic [$clog2(`MAX_SEQ_LENGTH)-1:0]      vec_index, next_vec_index, vec_to_fetch, next_vec_to_fetch;     // which vector within the phase
     logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count, next_blk_count, blk_to_fetch, next_blk_to_fetch;     // 0..BLOCKS_PER_VEC
+    logic [$clog2(VECTOR_BYTES)-1:0] write_index, next_write_index;
     logic                                    have_full_vec; // flag: internal buffer contains a complete vector
     logic buffer_empty;
 
@@ -114,7 +115,7 @@ module memory_controller #(
             PH_DRAIN_O: begin
                 //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
                 for(int i = 0; i < 8; i++) begin
-                    proc2mem_data.byte_level[i] = vector_buffer[write_index+i]
+                    proc2mem_data.byte_level[i] = vector_buffer[write_index+i];
                 end
             end
             default: proc2mem_data = '0;
@@ -154,14 +155,14 @@ module memory_controller #(
                     next_blk_to_fetch = blk_to_fetch + 1; //Auto wraps back to zero on every full vector loaded
                     if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
                         next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
-                        if(vec_to_fetch = `MAX_SEQ_LENGTH - 1) begin
+                        if(vec_to_fetch == `MAX_SEQ_LENGTH - 1) begin
                             last_blk_fetched_for_load_phase_n = 1;
                         end
                     end
                 end
             end
             PH_DRAIN_O: begin
-                proc2mem_command = buffer_empty ? MEM_NONE ; MEM_STORE;
+                proc2mem_command = buffer_empty ? MEM_NONE : MEM_STORE;
             end
             default: proc2mem_command = MEM_NONE;
         endcase
@@ -177,7 +178,7 @@ module memory_controller #(
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
-                    if(vec_index == `MAX_SEQ_LENTH-1) next_phase = PH_LOAD_V;
+                    if(vec_index == `MAX_SEQ_LENGTH-1) next_phase = PH_LOAD_V;
                 end
             end
 
@@ -187,7 +188,7 @@ module memory_controller #(
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
-                    if(vec_index == `MAX_SEQ_LENTH-1) next_phase = PH_LOAD_Q;
+                    if(vec_index == `MAX_SEQ_LENGTH-1) next_phase = PH_LOAD_Q;
                 end
             end
 
@@ -197,7 +198,7 @@ module memory_controller #(
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
-                    if(vec_index == `MAX_SEQ_LENTH-1) next_phase = PH_DRAIN_O;
+                    if(vec_index == `MAX_SEQ_LENGTH-1) next_phase = PH_DRAIN_O;
                 end
             end
 
@@ -212,7 +213,7 @@ module memory_controller #(
                 end
 
                 // Advance to next phase after all O vectors written back to memory
-                if ((vec_index == `MAX_SEQ_LENTH-1) && (blk_count == 1)) begin
+                if ((vec_index == `MAX_SEQ_LENGTH-1) && (blk_count == 1)) begin
                     //When blk count is 1 we guarantee the buffer will drain at the end of that cycle
                     next_phase = PH_DONE;
                 end
@@ -250,7 +251,7 @@ module memory_controller #(
                     end
                 end
             end
-            default: //do nothing
+            //default: //do nothing
         endcase
     end
 
@@ -274,7 +275,7 @@ module memory_controller #(
             blk_count         <= next_blk_count;
             blk_to_fetch      <= next_blk_to_fetch;
             write_index       <= next_write_index;
-            expected_tag_fifo <= next_expected_tag_fifo
+            expected_tag_fifo <= next_expected_tag_fifo;
             tag_head          <= next_tag_head;
             tag_tail          <= next_tag_tail;
             last_blk_fetched_for_load_phase <= last_blk_fetched_for_load_phase_n;

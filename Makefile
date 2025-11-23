@@ -59,7 +59,7 @@ SHELL := $(SHELL) -o pipefail
 
 # ---- Modules to Test ---- #
 
-MODULES = dot_product tree_reduce reduction_step q_convert int_division expmul
+MODULES = AURA dot_product expmul expmul_stage int_division KSRAM max memory_controller OSRAM PE q_align_frac q_align_int q_convert q_saturate q_sign_extend QSRAM reduction_step tree_reduce vec_add vector_division
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(AURA_HEADERS)
@@ -103,11 +103,17 @@ AURA_SOURCES = verilog/AURA.sv \
 		       verilog/dot_product.sv \
 			   verilog/expmul_stage.sv \
 			   verilog/expmul.sv \
+			   verilog/int_division.sv \
 			   verilog/KSRAM.sv \
 			   verilog/max.sv \
 			   verilog/memory_controller.sv \
 			   verilog/OSRAM.sv \
 		       verilog/PE.sv \
+			   verilog/q_sign_extend.sv \
+			   verilog/q_saturate.sv \
+			   verilog/q_align_frac.sv \
+			   verilog/q_align_int.sv \
+			   verilog/q_convert.sv \
 			   verilog/QSRAM.sv \
 			   verilog/reduction_step.sv \
 		       verilog/tree_reduce.sv \
@@ -115,14 +121,14 @@ AURA_SOURCES = verilog/AURA.sv \
 			   verilog/vector_division.sv \
 		       verilog/VSRAM.sv \
 			  
-build/aura.simv: $(AURA_HEADERS) $(AURA_SOURCES) $(AURA_TESTBENCH)
-synth/aura.vg: $(AURA_HEADERS) $(AURA_SOURCES)
-build/aura.syn.simv: $(AURA_TESTBENCH)
+build/AURA.simv: $(AURA_HEADERS) $(AURA_SOURCES) $(AURA_TESTBENCH)
+synth/AURA.vg: $(AURA_HEADERS) $(AURA_SOURCES)
+build/AURA.syn.simv: $(AURA_TESTBENCH)
 # Don't need coverage for the CPU
 
 # Connect the simv and syn_simv targets for the autograder
-simv: build/aura.simv ;
-syn_simv: build/aura.syn.simv ;
+simv: build/AURA.simv ;
+syn_simv: build/AURA.syn.simv ;
 
 
 #####################
@@ -238,18 +244,63 @@ $(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
 # ---- Executable Compilation ---- #
 ####################################
 
-########################################
-# ---- Program Memory Compilation ---- #
-########################################
-
-#FILL IN THIS SECTION WITH OUR MEM GENERATOR SCRIPTS
-
-
 ###############################
 # ---- Program Execution ---- #
 ###############################
 
-#GOTTA FIGURE THIS ONE OUT
+# PROGRAMS = $(ASSEMBLY:%.s=%) $(C_CODE:%.c=%)
+
+# run one of the executables (simv/syn_simv) using the chosen test mem files
+# e.g. 'make random_test.out' does the following from a clean directory:
+#   1. compiles simv
+#   2. Grabs mem/random_test/ random_test.Qmem random_test.Kmem and random_test.Vmem
+#   3. runs ./simv +QMEMORY=random_test.Qmem +KMEMORY=random_test.Kmem +VMEMORY=random_test.Vmem +OUTPUT=output/random_test > output/random_test.out
+#   4. which creates the random_test.out and random_test.log files in output/
+# the same can be done for synthesis by doing 'make random_test.syn.out'
+# which will also create random_test.syn.out and random_test.syn.log files in output/
+
+# run a program and produce output files
+output/%.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.simv | output
+	@$(call PRINT_COLOR, 5, running simv on $*)
+	./build/AURA.simv \
+		+QMEMORY=$(word 1,$^) \
+		+KMEMORY=$(word 2,$^) \
+		+VMEMORY=$(word 3,$^) \
+		+OUTPUT=output/$* \
+		> output/$*.log
+	@$(call PRINT_COLOR, 6, finished running simv on $*)
+	@$(call PRINT_COLOR, 2, output is in output/$*.{out log})
+
+# NOTE: this uses a 'static pattern rule' to match a list of known targets to a pattern
+# and then generates the correct rule based on the pattern, where % and $* match
+# so for the target 'output/sampler.out' the % matches 'sampler' and depends on programs/sampler.mem
+# see: https://www.gnu.org/software/make/manual/html_node/Static-Usage.html
+# $(@D) is an automatic variable for the directory of the target, in this case, 'output'
+
+# this does the same as simv, but adds .syn to the output files and compiles syn_simv instead
+# run synthesis with: 'make <my_test>.syn.out'
+output/%.syn.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.syn.simv | output
+	@$(call PRINT_COLOR, 5, running syn_simv on $<)
+	@$(call PRINT_COLOR, 3, this might take a while...)
+	./build/AURA.syn.simv \
+		+QMEMORY=$(word 1,$^) \
+		+KMEMORY=$(word 2,$^) \
+		+VMEMORY=$(word 3,$^) \
+		+OUTPUT=output/$*.syn \
+		> output/$*.syn.log
+	@$(call PRINT_COLOR, 6, finished running syn_simv on $<)
+	@$(call PRINT_COLOR, 2, output is in output/$*.syn.{out cpi wb})
+
+# Allow us to type 'make <my_program>.out' instead of 'make output/<my_program>.out'
+./%.out: output/%.out ;
+.PHONY: ./%.out
+
+.PRECIOUS: %.out
+
+# run all programs in one command (use 'make -j' to run multithreaded)
+# simulate_all: build/aura.simv compile_all $(PROGRAMS:programs/%=output/%.out)
+# simulate_all_syn: build/aura.syn.simv compile_all $(PROGRAMS:programs/%=output/%.syn.out)
+# .PHONY: simulate_all simulate_all_syn
 
 ################################
 # ---- Output Directories ---- #

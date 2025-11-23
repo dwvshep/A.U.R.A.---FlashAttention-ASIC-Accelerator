@@ -1,7 +1,7 @@
 // KSRAM FIFO
 
 module KSRAM #(
-    parameter integer NUM_ENTRIES  = `MAX_SEQ_LENGTH,  // number of rows per bank
+    parameter integer NUM_ENTRIES  = `MAX_SEQ_LENGTH  // number of rows per bank
 )(
     input                              clk,
     input                              rst,
@@ -30,10 +30,10 @@ module KSRAM #(
     assign empty = (head == tail);
 
     // Output data valid when the fifo has at least one valid entry
-    assign read_data_valid = !empty
+    assign read_data_valid = !empty;
 
     // SRAM ready to receive a new vector when the fifo is not full
-    assign sram_ready = !full
+    assign sram_ready = !full;
 
     // Output read data from the head of the fifo in the same cycle
     assign read_data = fifo[head];
@@ -56,6 +56,9 @@ module KSRAM #(
             if (read_enable && read_data_valid) begin
                 head <= head + 1;
             end
+        end
+        for(int i = 0; i < NUM_ENTRIES; i++) begin
+            $display("KSRAM_ENTRY[%0d] = %p", i, fifo[i]);
         end
     end
 

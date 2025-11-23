@@ -26,7 +26,7 @@ import "DPI-C" function string decode_inst(int inst);
 
 module testbench;
     // string inputs for loading memory and output files
-    // run like: cd build && ./simv +MEMORY=../programs/mem/<my_program>.mem +OUTPUT=../output/<my_program>
+    // run like: cd build && ./simv +MEMORY=../mem/<my_test>.mem +OUTPUT=../output/<my_test>
     // this testbench will generate 4 output files based on the output
     // named OUTPUT.{out cpi, wb, ppln} for the memory, cpi, writeback, and pipeline outputs.
     string Q_mem, K_mem, V_mem;
@@ -52,15 +52,15 @@ module testbench;
     
     logic done;
 
-    EXCEPTION_CODE error_status = NO_ERROR;
+    //EXCEPTION_CODE error_status = NO_ERROR;
 
     
     // INST          [`N-1:0] insts;
     // ADDR          [`N-1:0] PCs;
-    COMMIT_PACKET [`N-1:0] committed_insts;
+    // COMMIT_PACKET [`N-1:0] committed_insts;
 
     // UPDATED MEMORY
-    DATA [1:0] updated_memory [`MEM_64BIT_LINES-1:0];
+    MEM_BLOCK updated_memory [`MEM_64BIT_LINES-1:0];
 
     localparam WIDTH = $bits(MEM_BLOCK);
 
@@ -75,8 +75,8 @@ module testbench;
     // Instantiate the the Top-Level
     AURA AURA_dut (
         // Inputs
-        .clock (clock),
-        .reset (reset),
+        .clk (clock),
+        .rst (reset),
         
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
         .mem2proc_data            (mem2proc_data),
@@ -87,7 +87,7 @@ module testbench;
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
 
-        .done(done),
+        .done(done)
     );
 
     // Instantiate the Data Memory
@@ -211,7 +211,7 @@ module testbench;
             updated_memory = memory.unified_memory;
             $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
             $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
-            $fdisplay(out_fileno, "Display starts at Base Addr: %x", O_BASE)
+            $fdisplay(out_fileno, "Display starts at Base Addr: %x", O_BASE);
             $fdisplay(out_fileno, "@@@");
 
             for(int k = 0; k < ROW; k++) begin

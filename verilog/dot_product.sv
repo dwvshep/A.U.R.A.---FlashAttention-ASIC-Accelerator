@@ -126,7 +126,7 @@ module dot_product (
         end
     end
 
-    //
+    //convert intermediate products into products
     generate
         for(genvar p = 0; p < `MAX_EMBEDDING_DIM; p++) begin
             q_convert #(

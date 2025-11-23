@@ -20,7 +20,7 @@
 //  - You can treat load_* as coming from your "DRAM" adapter.
 
 module QSRAM #(
-    parameter integer NUM_ROWS  = `NUM_PES,  // number of rows per bank
+    parameter integer NUM_ROWS  = `NUM_PES  // number of rows per bank
 )(
     input                              clk,
     input                              rst,
@@ -38,7 +38,7 @@ module QSRAM #(
 
     // Bank 0 and Bank 1: each has NUM_ROWS entries of Q Vectors.
     Q_VECTOR_T bank0 [NUM_ROWS];
-    Q_VECTOR_T bank0 [NUM_ROWS];
+    Q_VECTOR_T bank1 [NUM_ROWS];
 
     // Which bank is currently being filled (0 or 1)?
     logic fill_bank;

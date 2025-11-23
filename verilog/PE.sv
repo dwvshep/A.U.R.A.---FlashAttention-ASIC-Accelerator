@@ -34,9 +34,6 @@ module PE(
     STAR_VECTOR_T output_vector;
 
     //Internal Handshake Signals
-    logic Q_rdy_out;
-    logic K_rdy_out;
-    logic V_rdy_out
     logic dot_product_valid;
     logic max_valid;
     logic max_ready;
@@ -47,12 +44,20 @@ module PE(
     logic vector_division_ready;
 
     //Generate v_star by appending 1 to v_vector_double_delayed and converting to Q9.8
-    always_comb begin
-        v_star[0] = 1;
-        for(int i = 1; i <= `MAX_EMBEDDING_DIM) begin
-            v_star[i] = `Q_CONVERT(v_vector_double_delayed[i], 0, 7, 9, 7);
+    generate
+        assign v_star[0] = 1;
+        for(genvar v = 1; v <= `MAX_EMBEDDING_DIM; v++) begin
+            q_convert #(
+                .IN_I(`INPUT_VEC_I), 
+                .IN_F(`INPUT_VEC_F), 
+                .OUT_I(`EXPMUL_VEC_I), 
+                .OUT_F(`EXPMUL_VEC_F)
+            ) prod_conv_inst (
+                .in(v_vector_double_delayed[v]),
+                .out(v_star[v])
+            );
         end
-    end
+    endgenerate
 
     //Internal Data Flow Modules
     dot_product dot_product_inst (
