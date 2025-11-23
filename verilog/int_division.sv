@@ -1,10 +1,4 @@
-// -----------------------------------------------------------------------------
-// Signed integer division for Q-format values
-// Inputs:  numerator_in, denominator_in are Q9.7  (DIV_INPUT_QT)
-// Output: quotient_out is Q0.7                   (OUTPUT_VEC_QT)
-// Internally performs:  (abs(num) << 7) / abs(den)
-// Uses non-restoring division for iterative quotient generation
-// -----------------------------------------------------------------------------
+
 `include "include/sys_defs.svh"
 
 module int_division(
@@ -12,11 +6,13 @@ module int_division(
     input  logic clk,
     input  logic rst,
 
-    // Handshake signals
-    input  logic vld_in,
-    input  logic rdy_in,
-    output logic vld_out,
-    output logic rdy_out,
+    // Upstream
+    input  logic vld_in,    // data from upstream is valid
+    output logic rdy_out,   // ready to accept input from upstream
+
+    // Downstream
+    input  logic rdy_in,    // downstream is ready to accept output
+    output logic vld_out,   // sending valid data to downstream
 
     // Data signals
     input  DIV_INPUT_QT numerator_in,
@@ -26,208 +22,165 @@ module int_division(
 
     localparam int DIV_INPUT_W = $bits(DIV_INPUT_QT);
 
-    // Divider working registers
-    logic signed [DIV_INPUT_W:0] rem;   // remainder with sign bit
-    logic signed [DIV_INPUT_W:0] rem_next;
-    logic [DIV_INPUT_W-2:0] q_reg;                            // Q0.7 working quotient bits
-    DIV_INPUT_QT divd;                   // |numerator| << 7
-    DIV_INPUT_QT divs;                   // |denominator|
-    logic [$clog2(DIV_INPUT_W+1)-1:0] bit_idx;
+    // -------------------------------------------------------------------------
+    // Internal Registers
+    // -------------------------------------------------------------------------
+    logic sign_n, sign_d, sign_q; 
+    logic [DIV_INPUT_W-2:0] abs_num, abs_den;
 
-    // -------------------------------------------------------------------------
-    // Internal control registers
-    // -------------------------------------------------------------------------
+    logic start_div;
+    logic div_busy, div_done, div_valid;
+
+    logic [DIV_INPUT_W-2:0] div_unsigned_q;
+    DIV_INPUT_QT signed_q;
+
     logic valid_reg;
-    logic busy;   // <--- moved here (declared BEFORE first use)
 
-    // -------------------------------------------------------------------------
-    // Sign + absolute value registers (Q9.7)
-    // -------------------------------------------------------------------------
-    logic            sign_numerator_reg;
-    logic            sign_denominator_reg;
-    logic            sign_quotient_reg;
-    DIV_INPUT_QT abs_numerator_reg;
-    DIV_INPUT_QT abs_denominator_reg;
-
-    // -------------------------------------------------------------------------
-    // Output quotient (Q0.7 magnitude + signed output)
-    // -------------------------------------------------------------------------
-    
-    //OUTPUT_VEC_QT abs_quotient;
-    logic [DIV_INPUT_W-2:0] abs_quotient;
-
-    logic [DIV_INPUT_W-1:0] quotient_signed;
-
-    // -------------------------------------------------------------------------
-    // Handshake
-    // - Cannot accept new inputs while busy
-    // - Valid_out means output is ready
-    // -------------------------------------------------------------------------
+    assign rdy_out = !valid_reg && !div_busy;
     assign vld_out = valid_reg;
-    assign rdy_out = !busy && (rdy_in || !valid_reg);
 
-    // -------------------------------------------------------------------------
-    // Divider FSM States
-    // -------------------------------------------------------------------------
-    typedef enum logic [1:0] {
-        DIV_IDLE,
-        DIV_RUN,
-        DIV_DONE
-    } div_state_e;
-
-    div_state_e state;
+    //assign start_div = vld_in && rdy_out;
 
     // -------------------------------------------------------------------------
     // INPUT LATCH: capture sign and magnitude when new transaction arrives
     // -------------------------------------------------------------------------
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            busy                 <= 1'b0;
-            sign_numerator_reg   <= 1'b0;
-            sign_denominator_reg <= 1'b0;
-            sign_quotient_reg    <= 1'b0;
-            abs_numerator_reg    <= '0;
-            abs_denominator_reg  <= '0;
-
+            valid_reg <= 1'b0;
+            start_div <= 1'b0;
+            sign_n    <= 1'b0;
+            sign_d    <= 1'b0;
+            sign_q    <= 1'b0;
+            abs_num   <= '0;
+            abs_den   <= '0;
         end else begin
+            start_div <= vld_in && rdy_out;
             if (vld_in && rdy_out) begin
-                busy <= 1'b1;
+                // Extract signs
+                sign_n <= numerator_in[DIV_INPUT_W-1];
+                sign_d <= denominator_in[DIV_INPUT_W-1];
+                sign_q <= numerator_in[DIV_INPUT_W-1] ^ denominator_in[DIV_INPUT_W-1];
 
-                // Sign bits
-                sign_numerator_reg   <= numerator_in[DIV_INPUT_W-1];
-                sign_denominator_reg <= denominator_in[DIV_INPUT_W-1];
-                sign_quotient_reg    <= numerator_in[DIV_INPUT_W-1] ^
-                                        denominator_in[DIV_INPUT_W-1];
+                // Abs values
+                abs_num <= numerator_in[DIV_INPUT_W-1] ? (~numerator_in[DIV_INPUT_W-2:0] + 1'b1) :  numerator_in[DIV_INPUT_W-2:0];
+                abs_den <= denominator_in[DIV_INPUT_W-1] ? (~denominator_in + 1) : denominator_in;
 
-                // Magnitude (abs value)
-                abs_numerator_reg   <= numerator_in[DIV_INPUT_W-1]
-                                       ? (~numerator_in  + 1'b1)
-                                       :  numerator_in;
+                valid_reg <= 1'b0; //division not done
+            end
 
-                abs_denominator_reg <= denominator_in[DIV_INPUT_W-1]
-                                       ? (~denominator_in + 1'b1)
-                                       :  denominator_in;
+            if(div_done) begin //capture output when divider finishes
+                valid_reg <= 1'b1;
+                $display("[DIV_DBG] DONE div_unsigned_q=%0d sign_q=%0b", div_unsigned_q, sign_q);
+            end
 
-            end else if (rdy_in && valid_reg) begin
-                // Downstream consumed the output → free divider
-                busy <= 1'b0;
+            if (valid_reg && rdy_in) begin //clear when downstream accpets
+                valid_reg <= 1'b0;
             end
         end
-        $display("state: %0b", state); // DEBUG
-        $display("divd: %0d, divs: %0d, bit_idx: %0d", divd, divs, bit_idx); // DEBUG
-        $display("rem: %0d, rem_next: %0d", rem, rem_next); // DEBUG
-        $display("quotient_out: %0d, q_reg: %0d, abs_quotient: %0d, quotient_signed: %0d\n", quotient_out, q_reg, abs_quotient, quotient_signed); // DEBUG, 
-        
-    end
-
-
-
-    
-
-    // -------------------------------------------------------------------------
-    // DIVIDER FSM
-    // -------------------------------------------------------------------------
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            state        <= DIV_IDLE;
-            rem          <= '0;
-            q_reg        <= '0;
-            divd         <= '0;
-            divs         <= '0;
-            bit_idx      <= '0;
-            abs_quotient <= '0;
-            valid_reg    <= 1'b0;
-
-        end else begin
-            // Drop valid when downstream accepts the output
-            if (valid_reg && rdy_in)
-                valid_reg <= 1'b0;
-
-            case (state)
-
-                // -------------------------------------------------------------
-                // IDLE: Wait for busy=1 (new transaction latched)
-                // -------------------------------------------------------------
-                DIV_IDLE: begin
-                    if (busy && !valid_reg && abs_denominator_reg != '0) begin
-                        // Init non-restoring division
-                        divd    <= abs_numerator_reg <<< `DIV_INPUT_F;  // scale numerator
-                        divs    <= abs_denominator_reg;
-                        rem     <= '0;
-                        q_reg   <= '0;
-                        bit_idx <= DIV_INPUT_W-1;
-                        state   <= DIV_RUN;
-
-                    end else if (busy && abs_denominator_reg == '0) begin
-                        // Division by zero → output = 0
-                        abs_quotient <= '0;
-                        valid_reg    <= 1'b1;
-                        state        <= DIV_IDLE;
-                    end
-                end
-
-                // -------------------------------------------------------------
-                // RUN: iterate through bits
-                // -------------------------------------------------------------
-                DIV_RUN: begin
-
-                    // Shift remainder left + inject next input bit
-                    rem_next      = rem <<< 1;
-                    rem_next[0]   = divd[bit_idx];
-
-                    // Non-restoring update
-                    if (rem >= 0) rem_next = rem_next - {1'b0, divs};
-                    else          rem_next = rem_next + {1'b0, divs};
-
-                    // Save quotient bit if in Q0.7 range
-                    //if (bit_idx <= 7)
-                        q_reg[bit_idx] <= (rem_next >= 0);
-
-                    // State update
-                    rem <= rem_next;
-
-                    if (bit_idx == 0)
-                        state <= DIV_DONE;
-                    else
-                        bit_idx <= bit_idx - 1;
-                end
-
-                // -------------------------------------------------------------
-                // DONE: perform final correction & publish result
-                // -------------------------------------------------------------
-                DIV_DONE: begin
-                    // Correction cycle (does not affect quotient bits)
-                    if (rem < 0)
-                        rem <= rem + {1'b0, divs};
-
-                    abs_quotient <= q_reg;
-                    valid_reg    <= 1'b1;
-                    state        <= DIV_IDLE;
-                end
-
-            endcase
-        end
     end
 
     // -------------------------------------------------------------------------
-    // Apply sign in two's complement
+    // DIVU Module Instance: unsigned division
     // -------------------------------------------------------------------------
+
+    divu #(
+        .WIDTH(DIV_INPUT_W-1),              // your Q_WIDTH-1 config matches the type
+        .FBITS(`DIV_INPUT_F)
+    ) div_inst (
+        .clk   (clk),
+        .rst   (rst),
+        .start (start_div),
+        .busy  (div_busy),
+        .done  (div_done),
+        .valid (div_valid),
+        .a     (abs_num),
+        .b     (abs_den),
+        .val   (div_unsigned_q)
+    );
+
     always_comb begin
-        quotient_signed = {sign_quotient_reg, {sign_quotient_reg
-                          ? (~abs_quotient + 1'b1)
-                          :  abs_quotient}};
+        if (sign_q)
+            signed_q = {sign_q, ~div_unsigned_q + 1};
+        else
+            signed_q = {sign_q, div_unsigned_q};
     end
 
-    // Final output
     q_convert  #(
         .IN_I(`DIV_INPUT_I),
         .IN_F(`DIV_INPUT_F),
         .OUT_I(`OUTPUT_VEC_I),
         .OUT_F(`OUTPUT_VEC_F)
     ) div_conv (
-        .in(quotient_signed),
+        .in(signed_q),
         .out(quotient_out)
     );
-    //assign quotient_out = quotient_signed;
 
+endmodule
+
+// -------------------------------------------------------------------------
+
+
+
+module divu #(
+    parameter WIDTH=`Q_WIDTH(`DIV_INPUT_I, `DIV_INPUT_F) - 1,  // width of numbers in bits (integer and fractional)
+    parameter FBITS= `DIV_INPUT_F   // fractional bits within WIDTH
+    ) (
+    input  clk,    // clock
+    input  rst,    // reset
+    input wire logic start,  // start calculation
+    output     logic busy,   // calculation in progress
+    output     logic done,   // calculation is complete (high for one tick)
+    output     logic valid,  // result is valid
+    input wire logic [WIDTH-1:0] a,   // dividend (numerator)
+    input wire logic [WIDTH-1:0] b,   // divisor (denominator)
+    output     logic [WIDTH-1:0] val  // result value: quotient
+    );
+
+    localparam FBITSW = (FBITS == 0) ? 1 : FBITS;  // avoid negative vector width when FBITS=0
+
+    logic [WIDTH-1:0] b1;             // copy of divisor
+    logic [WIDTH-1:0] quo, quo_next;  // intermediate quotient
+    logic [WIDTH:0] acc, acc_next;    // accumulator (1 bit wider)
+
+    localparam ITER = WIDTH + FBITS;  // iteration count: unsigned input width + fractional bits
+    logic [$clog2(ITER)-1:0] i;       // iteration counter
+
+    // division algorithm iteration
+    always_comb begin
+        if (acc >= {1'b0, b1}) begin
+            acc_next = acc - b1;
+            {acc_next, quo_next} = {acc_next[WIDTH-1:0], quo, 1'b1};
+        end else begin
+            {acc_next, quo_next} = {acc, quo} << 1;
+        end
+    end
+
+    // calculation control
+    always_ff @(posedge clk) begin
+        done <= 0;
+        if (start) begin
+            valid <= 0;
+            i <= 0;
+            busy <= 1;
+            b1 <= b;
+            {acc, quo} <= {{WIDTH{1'b0}}, a, 1'b0};  // initialize calculation
+        end else if (busy) begin
+            if (i == ITER-1) begin  // done
+                busy <= 0;
+                done <= 1;
+                valid <= 1;
+                val <= quo_next;
+            end else begin  // next iteration
+                i <= i + 1;
+                acc <= acc_next;
+                quo <= quo_next;
+            end
+        end
+        if (rst) begin
+            busy <= 0;
+            done <= 0;
+            valid <= 0;
+            val <= 0;
+        end
+    end
 endmodule
