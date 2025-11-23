@@ -53,9 +53,13 @@ module expmul_stage (
     EXPMUL_SHIFT_VECTOR_T shift_stage_3_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_4_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_5_result; //Q9.23
-    EXPMUL_VEC_QT v_in_1, v_out_1;
+
+    `Q_TYPE(6, 4) log_e_x_test;
+    EXPMUL_VEC_QT v_in_1, v_out_1, v_out_0;
+
     assign v_in_1 = v_in[1];
     assign v_out_1 = v_out[1];
+    assign v_out_0 = v_out[0];
 
     assign stage_2_ready = rdy_in;
     assign stage_1_ready = (!stage_1_valid) || stage_2_ready;
@@ -83,7 +87,7 @@ module expmul_stage (
             if (vld_in && stage_1_ready) begin
                 a <= a_in;
                 b <= b_in;
-                v <= v_in;
+                // v <= v_in;
                 stage_1_valid <= 1'b1;
         end else if (stage_2_ready) begin
             stage_1_valid <= 0;
@@ -100,6 +104,11 @@ module expmul_stage (
         .in(log_e_x),
         .out(l_hat_next)
     );
+
+    // q_convert #(.IN_I(6), .IN_F(4), .OUT_I(4), .OUT_F(0)) log_e_x_condense(
+    //     .in(log_e_x_test),
+    //     .out(l_hat_next)
+    // );
 
     generate
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
@@ -127,12 +136,12 @@ module expmul_stage (
     //output is combinational
     always_comb begin
         log_e_x = x_diff_condensed + (x_diff_condensed >>> 1) - (x_diff_condensed >>> 4);
-        //l_hat_next = log_e_x[12] : {1'b1, log_e_x[6 +: 4]} : '0;
+        // log_e_x_test = x_diff + (x_diff >>> 1) - (x_diff >>> 4);
     end
 
     generate 
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM+1; i++) begin : barrel_shift_generate
-            assign shift_stage_1_result[i] = l_hat[4] ? {v[i], 6'b000000} >>> 16 : {v[i], 6'b000000};
+            assign shift_stage_1_result[i] = l_hat[4] ? {v_in[i], 6'b000000} >>> 16 : {v_in[i], 6'b000000};
             assign shift_stage_2_result[i] = l_hat[3] ? shift_stage_1_result[i] <<< 8 : shift_stage_1_result[i];
             assign shift_stage_3_result[i] = l_hat[2] ? shift_stage_2_result[i] <<< 4 : shift_stage_2_result[i];
             assign shift_stage_4_result[i] = l_hat[1] ? shift_stage_3_result[i] <<< 2 : shift_stage_3_result[i];

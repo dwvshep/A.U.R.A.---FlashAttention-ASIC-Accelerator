@@ -77,7 +77,7 @@ module tb_expmul;
     );
         foreach (vec[i])
             vec[i] = $urandom_range(0, 50);
-            vec[1] = 32768;
+            vec[0] = 131072;
     endtask
 
     function real q07_to_real(logic signed [7:0] x);
@@ -117,14 +117,21 @@ module tb_expmul;
         end
     endfunction
 
-    function automatic int round_toward_zero_half(real val);
-        if (val >= 0.0) begin
-            // Positive: round normally
-            return int'(val + 0.5);
-        end else begin
-            // Negative: round toward zero
-            return int'(val - 0.5);
-        end
+    function automatic int round_half_toward_zero(real val);
+    real a     = $abs(val);
+    real frac  = a - $floor(a);
+    int  nearest;
+
+    // Standard nearest (ties away from zero): +0.5 -> up, -0.5 -> down
+    nearest = (val >= 0.0)
+                ? int'($floor(val + 0.5))
+                : -int'($floor(-val + 0.5));
+
+    // Override the exact half case for negatives to go toward zero
+    if ((frac == 0.5) && (val < 0.0))
+        return int'($ceil(val));
+    else
+        return nearest;
     endfunction
 
     function automatic int pow2(input int n);
@@ -160,7 +167,7 @@ module tb_expmul;
             @(posedge clk);
 
             // Wait until handshake completes
-            while (!(vld_in && rdy_out)) @(posedge clk);
+            //while (!(vld_in && rdy_out)) @(posedge clk);
 
             vld_in <= 0;
 
@@ -191,7 +198,8 @@ module tb_expmul;
     // -------------------------------------------------------------
     always @(posedge clk) begin
         if (!rst)
-            rdy_in <= $urandom_range(0, 1);  // random 0/1
+            // rdy_in <= $urandom_range(0, 1);  // random 0/1
+            rdy_in <= 1;
     end
 
 
@@ -220,25 +228,25 @@ module tb_expmul;
         count = 0;
         // for (s_send = -256; s_send < 255; s_send++)begin
         //     for (m_prev_send = s_send; m_prev_send < 255; m_prev_send++)begin
-            for (int a = 0; a < 16; a++) begin
-                    m_prev_send = $urandom_range(-256, 255);
+            for (int a = 0; a < 512; a++) begin
+                    //m_prev_send = $urandom_range(-256, 255);
                     s_send = $urandom_range(-256, 255);
-                    if (m_prev_send > s_send) begin
-                        m_send = $urandom_range(m_prev_send, 255);
-                    end else begin
-                        m_send = $urandom_range(s_send, 255);
-                    end
+                    m_send = $urandom_range(s_send, 255);
+                    m_prev_send = $urandom_range(m_send, 255);
                 send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);
                 #25;
-                $display("power thing: %f", (round_toward_zero_half((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
-                $display("v_prev_rand[1]: %f", v_prev_rand[1]/real'(1<<17));
-                // if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**(round_toward_zero_half(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)))) > 1e-3) begin
-                    $display("s_send: %f, m_send: %f\n", q44_to_real(s_send), q44_to_real(m_send));
-                    $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/real'(1<<17) * 2.0**round_toward_zero_half(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0))); 
-                    $display("Actual v_out_1 value: %f\n", q917_to_real(exp_v_out[1]));
-                    count++;
-                // end
+                //$display("power thing: %f", (round_half_toward_zero((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
+                //$display("v_prev_rand[1]: %f", v_prev_rand[1]/real'(1<<17));
+                if (m_send > s_send) begin
+                    if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**(round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)))) > 1e-3) begin
+                        $display("s_send: %f, m_send: %f\n", q44_to_real(s_send), q44_to_real(m_send));
+                        $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/real'(1<<17) * 2.0**round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0))); 
+                        $display("Actual v_out_1 value: %f\n", q917_to_real(exp_v_out[1]));
+                        count++;
+                    end
+                end
             end
+        
         // send_tx(real_to_fixed(0.625, 4), real_to_fixed(0.25, 4), real_to_fixed(0.25, 4), v_prev_rand, o_prev_rand);
         // $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/(1<<17) * 2.0**((0.25-0.625) * 1.442695)); 
         // #50;
@@ -267,6 +275,9 @@ module tb_expmul;
         //     );
         // end
         // #200;
+        #200;
+        $display("Count: %d", count);
+        $display("Expmul o out[0]: %f", q917_to_real(exp_o_out[0]));
         $display("==== TEST COMPLETE ====");
         $finish;
     end

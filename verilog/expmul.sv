@@ -28,9 +28,12 @@ module expmul(
     STAR_VECTOR_T o_star_prev;
     STAR_VECTOR_T v_star;
     logic expmul_o_valid, expmul_o_rdy, expmul_v_valid, expmul_v_rdy;
+    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] kv_counter;
+    STAR_VECTOR_T exp_o_out_partial, exp_o_out_partial_reg, exp_o_input;
 
-    assign vld_out = expmul_o_valid && expmul_v_valid;
+    assign vld_out = expmul_o_valid && expmul_v_valid && (kv_counter == 0);
     assign rdy_out = (expmul_o_rdy && expmul_v_rdy) || !(expmul_o_valid && expmul_v_valid);
+    
 
     //Latch inputs first
     // always_ff @(posedge clk) begin
@@ -70,7 +73,16 @@ module expmul(
     //     .v_in(v_star),
     //     .v_out(exp_v_out)
     // );
-
+    always_ff @(posedge clk) begin
+        if (rst)begin
+            kv_counter <= '0;
+        end else begin
+            if (vld_in && rdy_out) begin
+                kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
+                exp_o_input <= (kv_counter == 0) ? o_star_prev_in : exp_o_out + exp_v_out;
+            end
+        end
+    end
     //Use these if expmul is pipelined
     //But remember to not latch inputs in this top module so you dont waste an extra cycle
     //Also add support for internal valid-ready signals
@@ -83,7 +95,7 @@ module expmul(
         .rdy_out(expmul_o_rdy),
         .a_in(m_prev_in),
         .b_in(m_in),
-        .v_in(o_star_prev_in),
+        .v_in(exp_o_input),
         .v_out(exp_o_out)
     );
 
