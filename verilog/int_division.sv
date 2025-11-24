@@ -54,7 +54,9 @@ module int_division(
             abs_num   <= '0;
             abs_den   <= '0;
         end else begin
+            //pulses for one cycle whenever we hanshake
             start_div <= vld_in && rdy_out;
+
             if (vld_in && rdy_out) begin
                 // Extract signs
                 sign_n <= numerator_in[DIV_INPUT_W-1];
@@ -63,7 +65,7 @@ module int_division(
 
                 // Abs values
                 abs_num <= numerator_in[DIV_INPUT_W-1] ? (~numerator_in[DIV_INPUT_W-2:0] + 1'b1) :  numerator_in[DIV_INPUT_W-2:0];
-                abs_den <= denominator_in[DIV_INPUT_W-1] ? (~denominator_in + 1) : denominator_in;
+                abs_den <= denominator_in[DIV_INPUT_W-1] ? (~denominator_in[DIV_INPUT_W-2:0] + 1'b1) : denominator_in[DIV_INPUT_W-2:0];
 
                 valid_reg <= 1'b0; //division not done
             end

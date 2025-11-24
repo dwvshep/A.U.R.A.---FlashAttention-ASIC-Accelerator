@@ -129,8 +129,7 @@ module PE(
         .rdy_in(O_sram_rdy),
         .vld_out(output_valid),
         .rdy_out(vector_division_ready),
-        .vec_in(output_vector[1:`MAX_EMBEDDING_DIM]),
-        .divisor_in(output_vector[0]),
+        .vec_in(output_vector),
         .vec_out(output_vector_scaled)
     );
 

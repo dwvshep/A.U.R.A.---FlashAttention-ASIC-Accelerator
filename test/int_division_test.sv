@@ -96,13 +96,13 @@ module int_division_tb;
 
     function automatic OUTPUT_VEC_QT real_to_output_vec(real r);
         if (r * 2**`OUTPUT_VEC_F >= 0) begin
-            if($rtoi(r * 2**`OUTPUT_VEC_F + 0.5) > 0) return 0;
-            if($rtoi(r * 2**`OUTPUT_VEC_F + 0.5) < -1) return -1;
+            // if($rtoi(r * 2**`OUTPUT_VEC_F + 0.5) > 0.9921875) return QUOT_MAX;
+            // if($rtoi(r * 2**`OUTPUT_VEC_F + 0.5) < -1) return -1;
             return $rtoi(r * 2**`OUTPUT_VEC_F + 0.5);
         end
         else begin
-            if($rtoi(r * 2**`OUTPUT_VEC_F - 0.4999) > 0) return 0;
-            if($rtoi(r * 2**`OUTPUT_VEC_F - 0.4999) < -1) return -1;
+            // if($rtoi(r * 2**`OUTPUT_VEC_F - 0.4999) > 0.9921875) return QUOT_MAX;
+            // if($rtoi(r * 2**`OUTPUT_VEC_F - 0.4999) < -1) return -1;
             return $rtoi(r * 2**`OUTPUT_VEC_F - 0.4999);
         end
     endfunction
@@ -274,13 +274,13 @@ module int_division_tb;
             $display("RANDOM TEST %0d: raw n_i=%0d d_i=%0d  n=%0d d=%0d",
                     t, n, d, n, d);   
 
-            run_single_test(n, d);
-            //if ($abs(ni) < $abs(di)) begin
-            //    run_single_test(n, d);
-            //end else begin
-            //    //skip this combo? to avoid large quotients
-            //    t = t - 1;
-            //end
+            //run_single_test(n, d);
+            if ($abs(ni) < $abs(di)) begin
+               run_single_test(n, d);
+            end else begin
+               //skip this combo? to avoid large quotients
+               t = t - 1;
+            end
         end
 
         $display("\n======== DIVISION TEST SUMMARY ========");
