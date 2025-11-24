@@ -77,7 +77,7 @@ module tb_expmul;
     );
         foreach (vec[i])
             vec[i] = $urandom_range(0, 50);
-            vec[0] = 131072;
+            vec[1] = 32768;
     endtask
 
     function real q07_to_real(logic signed [7:0] x);
@@ -208,7 +208,8 @@ module tb_expmul;
     logic signed [8:0] m_send;
     logic signed [8:0] m_prev_send;
     logic signed [8:0] s_send;
-    int count;
+    real o_star_test;
+    int count, count_total;
 
     // -------------------------------------------------------------
     // Main test sequence
@@ -226,24 +227,32 @@ module tb_expmul;
         rand_vector(v_prev_rand);
         $display("v_prev_rand[1]: %d", v_prev_rand[1]);
         count = 0;
+        count_total = 0;
+        o_star_test = 0;
         // for (s_send = -256; s_send < 255; s_send++)begin
         //     for (m_prev_send = s_send; m_prev_send < 255; m_prev_send++)begin
-            for (int a = 0; a < 512; a++) begin
+            for (int a = 0; a < 2048; a++) begin
                     //m_prev_send = $urandom_range(-256, 255);
                     s_send = $urandom_range(-256, 255);
                     m_send = $urandom_range(s_send, 255);
                     m_prev_send = $urandom_range(-256, m_send);
-                send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);
-                #25;
+                if ((m_send > s_send) && (m_send > m_prev_send)) begin
+                    #25;
+                    send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);;
+                    o_star_test = ((o_star_test) * 2.0**(round_half_toward_zero(((q44_to_real(m_prev_send) - q44_to_real(m_send)) + (q44_to_real(m_prev_send) - q44_to_real(m_send))/2.0 - (q44_to_real(m_prev_send) - q44_to_real(m_send))/16.0)))) + (v_prev_rand[1]/real'(1<<17) * 2.0**round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
                 //$display("power thing: %f", (round_half_toward_zero((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
                 //$display("v_prev_rand[1]: %f", v_prev_rand[1]/real'(1<<17));
-                if (m_send > s_send) begin
+                    count_total++;
                     if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**(round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)))) > 1e-3) begin
                         $display("s_send: %f, m_send: %f\n", q44_to_real(s_send), q44_to_real(m_send));
                         $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/real'(1<<17) * 2.0**round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0))); 
                         $display("Actual v_out_1 value: %f\n", q917_to_real(exp_v_out[1]));
                         count++;
                     end
+                    // if (vld_out) begin
+                    //     $display("Expmul o out[1]: %f", q917_to_real(exp_o_out[1]));
+                    //     $display("Expmul o out ideal: %f", o_star_test);
+                    // end
                 end
             end
         
@@ -277,7 +286,9 @@ module tb_expmul;
         // #200;
         #200;
         $display("Count: %d", count);
-        $display("Expmul o out[0]: %f", q917_to_real(exp_o_out[0]));
+        $display("Count Total: %d", count_total);
+        // $display("Expmul o out[1]: %f", q917_to_real(exp_o_out[1]));
+        // $display("Expmul o out ideal: %f", o_star_test);
         $display("==== TEST COMPLETE ====");
         $finish;
     end

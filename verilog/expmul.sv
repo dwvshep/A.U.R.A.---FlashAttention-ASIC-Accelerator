@@ -33,6 +33,12 @@ module expmul(
 
     assign vld_out = expmul_o_valid && expmul_v_valid && (kv_counter == 0);
     assign rdy_out = (expmul_o_rdy && expmul_v_rdy) || !(expmul_o_valid && expmul_v_valid);
+
+    generate
+        for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
+            assign exp_o_out[i] = exp_o_out_partial[i] + exp_v_out[i];
+        end
+    endgenerate
     
 
     //Latch inputs first
@@ -78,7 +84,7 @@ module expmul(
             kv_counter <= '0;
         end else begin
             if (vld_in && rdy_out) begin
-                exp_o_input <= (kv_counter == 0) ? o_star_prev_in : exp_o_out + exp_v_out;
+                exp_o_input <= (kv_counter == 0) ? o_star_prev_in : exp_o_out_partial + exp_v_out;
                 kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
             end
         end
@@ -96,7 +102,7 @@ module expmul(
         .a_in(m_prev_in),
         .b_in(m_in),
         .v_in(exp_o_input),
-        .v_out(exp_o_out),
+        .v_out(exp_o_out_partial),
         .o_star_mode(1'b1)
     );
 
