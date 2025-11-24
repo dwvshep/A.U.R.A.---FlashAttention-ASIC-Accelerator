@@ -77,7 +77,7 @@ module tb_expmul;
     );
         foreach (vec[i])
             vec[i] = $urandom_range(0, 50);
-            vec[1] = 32768;
+            vec[1] = 131072;
     endtask
 
     function real q07_to_real(logic signed [7:0] x);
@@ -136,6 +136,14 @@ module tb_expmul;
 
     function automatic int pow2(input int n);
         return (1 << n);
+    endfunction
+
+    function automatic int limit_output (input int n);
+        if (n < -16) begin
+            return -16;
+        end else begin
+            return n;
+        end
     endfunction
     // -------------------------------------------------------------
     // Transaction sender (handles ready/valid correctly)
@@ -231,19 +239,20 @@ module tb_expmul;
         o_star_test = 0;
         // for (s_send = -256; s_send < 255; s_send++)begin
         //     for (m_prev_send = s_send; m_prev_send < 255; m_prev_send++)begin
-            for (int a = 0; a < 2048; a++) begin
+            for (int a = 0; a < 4096; a++) begin
                     //m_prev_send = $urandom_range(-256, 255);
                     s_send = $urandom_range(-256, 255);
                     m_send = $urandom_range(s_send, 255);
                     m_prev_send = $urandom_range(-256, m_send);
                 if ((m_send > s_send) && (m_send > m_prev_send)) begin
+                    send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);
                     #25;
-                    send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);;
                     o_star_test = ((o_star_test) * 2.0**(round_half_toward_zero(((q44_to_real(m_prev_send) - q44_to_real(m_send)) + (q44_to_real(m_prev_send) - q44_to_real(m_send))/2.0 - (q44_to_real(m_prev_send) - q44_to_real(m_send))/16.0)))) + (v_prev_rand[1]/real'(1<<17) * 2.0**round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
                 //$display("power thing: %f", (round_half_toward_zero((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));
                 //$display("v_prev_rand[1]: %f", v_prev_rand[1]/real'(1<<17));
                     count_total++;
-                    if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**(round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)))) > 1e-3) begin
+                    // if ($abs(q917_to_real(exp_v_out[1])-v_prev_rand[1]/real'(1<<17) * 2.0**(round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)))) > 1e-3) begin
+                    if (q917_to_real(exp_v_out[1]) != v_prev_rand[1]/real'(1<<17) * 2.0**(limit_output(round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0))))) begin
                         $display("s_send: %f, m_send: %f\n", q44_to_real(s_send), q44_to_real(m_send));
                         $display("Ideal v_out_1 value: %f ", v_prev_rand[1]/real'(1<<17) * 2.0**round_half_toward_zero(((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0))); 
                         $display("Actual v_out_1 value: %f\n", q917_to_real(exp_v_out[1]));
