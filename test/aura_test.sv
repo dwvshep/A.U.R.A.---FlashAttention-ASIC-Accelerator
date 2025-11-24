@@ -19,9 +19,7 @@ import "DPI-C" function string decode_inst(int inst);
 //import "DPI-C" function void close_pipeline_output_file();
 
 
-`define TB_MAX_CYCLES 50000000
-`define DEBUG
-// `define SIM
+`define TB_MAX_CYCLES 100000
 
 
 module testbench;
@@ -112,8 +110,8 @@ module testbench;
     end
 
     initial begin
-        $dumpfile("../aura.vcd");
-        $dumpvars(0, testbench.AURA_dut);
+        //$dumpfile("../aura.vcd");
+        //$dumpvars(0, testbench.AURA_dut);
         $display("\n---- Starting CPU Testbench ----\n");
 
         // set paramterized strings, see comment at start of module
@@ -214,7 +212,7 @@ module testbench;
             $fdisplay(out_fileno, "Display starts at Base Addr: %x", O_BASE);
             $fdisplay(out_fileno, "@@@");
 
-            for(int k = 0; k < ROW; k++) begin
+            for(int k = 0; k < ROW * 8; k++) begin
                 $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, updated_memory[O_IDX + k], updated_memory[O_IDX + k]);
             end
 

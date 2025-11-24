@@ -91,9 +91,9 @@ void softmax_fixed(const vector<int32_t> &scores, vector<uint16_t> &weights) {
 
 
 int main() {
-    auto Q = read_mem_matrix_u8("../mem/Q.mem");
-    auto K = read_mem_matrix_u8("../mem/K.mem");
-    auto V = read_mem_matrix_u8("../mem/V.mem");
+    auto Q = read_mem_matrix_u8("../mem/random_test1/Q.mem");
+    auto K = read_mem_matrix_u8("../mem/random_test1/K.mem");
+    auto V = read_mem_matrix_u8("../mem/random_test1/V.mem");
 
     vector<vector<uint8_t>> O_bytes(ROWS, vector<uint8_t>(COLS,0));
 
@@ -119,5 +119,5 @@ int main() {
         if ((i%64)==0) cerr<<"Row "<<i<<"\n";
     }
 
-    write_mem_matrix("../mem/O_fixed.out", O_bytes);
+    write_mem_matrix("../mem/random_test1/O_fixed.out", O_bytes);
 }
