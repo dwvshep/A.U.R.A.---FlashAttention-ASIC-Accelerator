@@ -157,9 +157,9 @@ module testbench;
 
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
-        $readmemh(Q_mem, memory.unified_memory, Q_IDX, Q_IDX + ROW - 1);
-        $readmemh(K_mem, memory.unified_memory, K_IDX, K_IDX + ROW - 1);
-        $readmemh(V_mem, memory.unified_memory, V_IDX, V_IDX + ROW - 1);
+        $readmemh(Q_mem, memory.unified_memory, Q_IDX, Q_IDX + (ROW * 8) - 1);
+        $readmemh(K_mem, memory.unified_memory, K_IDX, K_IDX + (ROW * 8) - 1);
+        $readmemh(V_mem, memory.unified_memory, V_IDX, V_IDX + (ROW * 8) - 1);
 
         @(posedge clock);
         @(posedge clock);

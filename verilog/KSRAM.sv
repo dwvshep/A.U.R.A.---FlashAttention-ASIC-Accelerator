@@ -58,9 +58,11 @@ module KSRAM #(
                 head <= head + 1;
             end
         end
-        for(int i = 0; i < NUM_ENTRIES; i++) begin
-            $display("KSRAM_ENTRY[%0d] = %p", i, fifo[i]);
-        end
+        `ifdef KSRAM_DEBUG
+            for(int i = 0; i < NUM_ENTRIES; i++) begin
+                $display("KSRAM_ENTRY[%0d] = %p", i, fifo[i]);
+            end
+        `endif
     end
 
 endmodule

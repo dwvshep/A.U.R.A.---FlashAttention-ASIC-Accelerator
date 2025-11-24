@@ -72,7 +72,9 @@ module int_division(
 
             if(div_done) begin //capture output when divider finishes
                 valid_reg <= 1'b1;
+            `ifdef INT_DIV_DEBUG
                 $display("[DIV_DBG] DONE div_unsigned_q=%0d sign_q=%0b", div_unsigned_q, sign_q);
+            `endif
             end
 
             if (valid_reg && rdy_in) begin //clear when downstream accpets

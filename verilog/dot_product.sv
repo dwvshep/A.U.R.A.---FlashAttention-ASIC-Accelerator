@@ -53,9 +53,7 @@ module dot_product (
 
     //Latch Q input
     always_ff @(posedge clk) begin
-        //$display("[DOT PRODUCT Q LATCH]");
         if(rst) begin
-            //$display("RESET");
             q <= '0;
             valid_q <= 1'b0;
             row_counter <= '0;
@@ -70,23 +68,26 @@ module dot_product (
                 valid_q <= 1'b0;
             end
         end
-        // $display("valid_q: %0b", valid_q);
-        // $display("row_counter: %0d", row_counter);
-        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
-        //     $display("q[%0d]: %8b OR %8f",
-        //     i, q[i], q[i]/128.0);
-        // end
-        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
-        //     $display("k[%0d]: %8b OR %8f",
-        //     i, k[i], k[i]/128.0);
-        // end
-        // for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
-        //     $display("inter_prod[%0d]: %16b OR %16f",
-        //     i, intermediate_products[i], intermediate_products[i]/(2.0**14));
-        // end
-        $display("sum: %20b", sum);
-        $display("shifted_sum: %20b", shifted_sum);
-        $display("s_out: %9b", s_out);
+        `ifdef DOT_PRODUCT_DEBUG
+            $display("[DOT PRODUCT Q LATCH]");
+            $display("valid_q: %0b", valid_q);
+            $display("row_counter: %0d", row_counter);
+            for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+                $display("q[%0d]: %8b OR %8f",
+                i, q[i], q[i]/128.0);
+            end
+            for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+                $display("k[%0d]: %8b OR %8f",
+                i, k[i], k[i]/128.0);
+            end
+            for (int i = 0; i < `MAX_EMBEDDING_DIM; ++i) begin
+                $display("inter_prod[%0d]: %16b OR %16f",
+                i, intermediate_products[i], intermediate_products[i]/(2.0**14));
+            end
+            $display("sum: %20b", sum);
+            $display("shifted_sum: %20b", shifted_sum);
+            $display("s_out: %9b", s_out);
+        `endif
     end
 
     //Latch K inputs

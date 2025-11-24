@@ -19,9 +19,6 @@
 // ---- Starting Parameters ---- //
 ///////////////////////////////////
 
-//Comment out when synthesizing
-//`define DEBUG 
-
 `define INTEGER_WIDTH 8           // Width of integer data types (4, 8, 16, 32)
 
 `define MAX_EMBEDDING_DIM 64      // Maximum embedding dimension supported
@@ -255,5 +252,26 @@ typedef enum logic [1:0] {
     MEM_LOAD   = 2'h1,
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
+
+
+///////////////////////////
+// ---- DEBUG FLAGS ---- //
+///////////////////////////
+
+//Comment out when synthesizing
+//`define DEBUG 
+
+// `define KSRAM_DEBUG
+// `define VSRAM_DEBUG
+// `define QSRAM_DEBUG
+// `define OSRAM_DEBUG
+// `define INT_DIV_DEBUG
+// `define DOT_PRODUCT_DEBUG
+// `define EXPMUL_DEBUG
+// `define MAX_DEBUG
+// `define MEM_CTRL_DEBUG
+// `define KSRAM_DEBUG
+
+
 
 `endif

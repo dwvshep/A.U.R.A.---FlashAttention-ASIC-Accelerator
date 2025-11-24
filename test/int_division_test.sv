@@ -220,18 +220,22 @@ module int_division_tb;
             total_count++;
 
             if (quotient_out === golden_q) begin
-                $display("[PASS] n=%0d (%.7f) d=%0d (%.7f) -> q=%0d (%0b, %.7f)  golden=%0d (%0b, %.7f)",
-                        num, num_r,
-                        den, den_r,
-                        quotient_out, quotient_out, q_r,
-                        golden_q,     golden_q,     g_r);
+                `ifdef INT_DIV_DEBUG
+                    $display("[PASS] n=%0d (%.7f) d=%0d (%.7f) -> q=%0d (%0b, %.7f)  golden=%0d (%0b, %.7f)",
+                            num, num_r,
+                            den, den_r,
+                            quotient_out, quotient_out, q_r,
+                            golden_q,     golden_q,     g_r);
+                `endif
                 pass_count++;
             end else begin
-                $display("[FAIL] n=%0d (%.7f) d=%0d (%.7f) -> q=%0d (%0b, %.7f)  golden=%0d (%0b, %.7f)",
-                        num, num_r,
-                        den, den_r,
-                        quotient_out, quotient_out, q_r,
-                        golden_q,     golden_q,     g_r);
+                `ifdef INT_DIV_DEBUG
+                    $display("[FAIL] n=%0d (%.7f) d=%0d (%.7f) -> q=%0d (%0b, %.7f)  golden=%0d (%0b, %.7f)",
+                            num, num_r,
+                            den, den_r,
+                            quotient_out, quotient_out, q_r,
+                            golden_q,     golden_q,     g_r);
+                `endif
             end
 
             // one idle cycle between tests
@@ -244,9 +248,11 @@ module int_division_tb;
     // --------------------------------------------------------
     initial begin : TEST_MAIN
         // Wait for reset deassert
-        $display("QTYPES:");
-        $display("DIV_INPUT_QT: Q(%0d,%0d)", `DIV_INPUT_I, `DIV_INPUT_F);
-        $display("OUTPUT_VEC_QT: Q(%0d,%0d)", `OUTPUT_VEC_I, `OUTPUT_VEC_F);
+        `ifdef INT_DIV_DEBUG
+            $display("QTYPES:");
+            $display("DIV_INPUT_QT: Q(%0d,%0d)", `DIV_INPUT_I, `DIV_INPUT_F);
+            $display("OUTPUT_VEC_QT: Q(%0d,%0d)", `OUTPUT_VEC_I, `OUTPUT_VEC_F);
+        `endif
 
         @(negedge rst);
         @(posedge clk);
@@ -271,8 +277,10 @@ module int_division_tb;
             di = int'(d);
 
             // Debug print to verify randomness:
-            $display("RANDOM TEST %0d: raw n_i=%0d d_i=%0d  n=%0d d=%0d",
-                    t, n, d, n, d);   
+            `ifdef INT_DIV_DEBUG
+                $display("RANDOM TEST %0d: raw n_i=%0d d_i=%0d  n=%0d d=%0d",
+                        t, n, d, n, d);   
+            `endif
 
             //run_single_test(n, d);
             if ($abs(ni) < $abs(di)) begin
@@ -283,9 +291,11 @@ module int_division_tb;
             end
         end
 
-        $display("\n======== DIVISION TEST SUMMARY ========");
-        $display("Pass: %0d / %0d", pass_count, total_count);
-        $display("=======================================\n");
+        `ifdef INT_DIV_DEBUG
+            $display("\n======== DIVISION TEST SUMMARY ========");
+            $display("Pass: %0d / %0d", pass_count, total_count);
+            $display("=======================================\n");
+        `endif
 //
         $finish;
     end
