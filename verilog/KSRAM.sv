@@ -40,11 +40,12 @@ module KSRAM #(
 
     always_ff @(posedge clk) begin
         if (rst) begin
-            fifo  <= '0;
+            //fifo  <= '0;
+            for (int i = 0; i < NUM_ENTRIES; i++) begin
+                fifo[i] <= '0;
+            end
             head  <= '0;
             tail  <= '0;
-            full  <=  0;
-            empty <=  1;
         end else begin
             // Handle write
             if (write_enable && sram_ready) begin

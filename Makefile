@@ -59,7 +59,7 @@ SHELL := $(SHELL) -o pipefail
 
 # ---- Modules to Test ---- #
 
-MODULES = AURA dot_product expmul expmul_stage int_division KSRAM max memory_controller OSRAM PE q_align_frac q_align_int q_convert q_saturate q_sign_extend QSRAM reduction_step tree_reduce vec_add vector_division
+MODULES = AURA dot_product expmul expmul_stage int_division KSRAM max memory_controller OSRAM PE q_align_frac q_align_int q_convert q_saturate q_sign_extend QSRAM reduction_step tree_reduce vector_division
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(AURA_HEADERS)
@@ -117,7 +117,6 @@ AURA_SOURCES = verilog/AURA.sv \
 			   verilog/QSRAM.sv \
 			   verilog/reduction_step.sv \
 		       verilog/tree_reduce.sv \
-			   verilog/vec_add.sv \
 			   verilog/vector_division.sv \
 		       verilog/VSRAM.sv \
 			  
@@ -263,9 +262,9 @@ $(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
 output/%.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.simv | output
 	@$(call PRINT_COLOR, 5, running simv on $*)
 	./build/AURA.simv \
-		+QMEMORY=$(word 1,$^) \
-		+KMEMORY=$(word 2,$^) \
-		+VMEMORY=$(word 3,$^) \
+		+Q_MEMORY=$(word 1,$^) \
+		+K_MEMORY=$(word 2,$^) \
+		+V_MEMORY=$(word 3,$^) \
 		+OUTPUT=output/$* \
 		> output/$*.log
 	@$(call PRINT_COLOR, 6, finished running simv on $*)

@@ -30,7 +30,7 @@ module PE(
     EXPMUL_DIFF_IN_QT max_score;
     EXPMUL_DIFF_IN_QT max_score_prev;
     STAR_VECTOR_T exp_o_vector;
-    STAR_VECTOR_T exp_v_vector;
+    //STAR_VECTOR_T exp_v_vector;
     STAR_VECTOR_T output_vector;
 
     //Internal Handshake Signals
@@ -53,7 +53,7 @@ module PE(
                 .OUT_I(`EXPMUL_VEC_I), 
                 .OUT_F(`EXPMUL_VEC_F)
             ) prod_conv_inst (
-                .in(v_vector_double_delayed[v]),
+                .in(v_vector_double_delayed[v-1]),
                 .out(v_star[v])
             );
         end
@@ -106,21 +106,8 @@ module PE(
         .o_star_prev_in('0),
         .s_in(score_delayed),
         .v_star_in(v_star),
-        .exp_v_out(exp_v_vector),
         .exp_o_out(output_vector)
     );
-
-    // vec_add vec_add_inst (
-    //     .clk(clk),
-    //     .rst(rst),
-    //     .vld_in(expmul_valid),
-    //     .rdy_in(vector_division_ready),
-    //     .vld_out(vec_add_valid),
-    //     .rdy_out(vec_add_ready),
-    //     .a_in(exp_o_vector),
-    //     .b_in(exp_v_vector),
-    //     .sum(output_vector)
-    // );
 
     vector_division vector_division_inst (
         .clk(clk),

@@ -15,14 +15,35 @@ module vector_division #(
     output rdy_out,
 
     // Data signals
-    //input  logic [DATA_WIDTH-1:0] vec_in [VEC_LEN],
     input  STAR_VECTOR_T vec_in,
-    input  EXPMUL_VEC_QT divisor_in, //single element (l)
-    output O_VECTOR_T vec_out,
+    output O_VECTOR_T vec_out
 );
+
+    // Internal signals
+    DIV_INPUT_QT numerators [1:VEC_LEN];
+    DIV_INPUT_QT denominator;
+
+    q_convert #(
+        .IN_I(`EXPMUL_VEC_I),
+        .IN_F(`EXPMUL_VEC_F),
+        .OUT_I(`DIV_INPUT_I),
+        .OUT_F(`DIV_INPUT_F)
+    ) denom_conv (
+        .in(vec_in[0]),
+        .out(denominator)
+    );
 
     generate
         for (genvar i = 1; i <= VEC_LEN; i++) begin : gen_div
+            q_convert #(
+                .IN_I(`EXPMUL_VEC_I),
+                .IN_F(`EXPMUL_VEC_F),
+                .OUT_I(`DIV_INPUT_I),
+                .OUT_F(`DIV_INPUT_F)
+            ) div_conv (
+                .in(vec_in[i]),
+                .out(numerators[i])
+            );
             int_division div_inst (
                 .clk(clk),
                 .rst(rst),
@@ -30,9 +51,9 @@ module vector_division #(
                 .rdy_in(rdy_in),
                 .vld_out(vld_out), //Connect this to top-level if needed
                 .rdy_out(rdy_out), //Connect this to top-level if needed
-                .numerator_in(vec[i]),
-                .denominator_in(vec[0]),
-                .quotient_out(vec_out[i])
+                .numerator_in(numerators[i]),
+                .denominator_in(denominator),
+                .quotient_out(vec_out[i-1])
             );
         end
     endgenerate

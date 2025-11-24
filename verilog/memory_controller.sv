@@ -251,7 +251,7 @@ module memory_controller #(
                     end
                 end
             end
-            //default: //do nothing
+            default: ;//do nothing
         endcase
     end
 
@@ -264,7 +264,10 @@ module memory_controller #(
             blk_count         <= '0;
             blk_to_fetch      <= '0;
             write_index       <= '0;
-            expected_tag_fifo <= '0;
+            //expected_tag_fifo <= '0;
+            for (int i = 0; i < `NUM_MEM_TAGS+1; i++) begin
+                expected_tag_fifo[i] <= '0;
+            end
             tag_head          <= '0;
             tag_tail          <= '0;
             last_blk_fetched_for_load_phase <= '0;
@@ -275,7 +278,10 @@ module memory_controller #(
             blk_count         <= next_blk_count;
             blk_to_fetch      <= next_blk_to_fetch;
             write_index       <= next_write_index;
-            expected_tag_fifo <= next_expected_tag_fifo;
+            //expected_tag_fifo <= next_expected_tag_fifo;
+            for (int i = 0; i < `NUM_MEM_TAGS+1; i++) begin
+                expected_tag_fifo[i] <= next_expected_tag_fifo[i];
+            end
             tag_head          <= next_tag_head;
             tag_tail          <= next_tag_tail;
             last_blk_fetched_for_load_phase <= last_blk_fetched_for_load_phase_n;

@@ -123,7 +123,7 @@ module AURA(
         .rst(rst),
         
         .write_enable(O_vld[0]),    //Asserted when PEs are ready to write an entire bank (can just check the first one)
-        .drain_enable(ctrl_rdy),     //Asserted when all backend PEs are ready to read
+        .drain_enable(ctrl_O_rdy),     //Asserted when all backend PEs are ready to read
         .drain_data_valid(O_sram_vld),  //Assert when any data in the drain bank is ready to be sent to memory
         .sram_ready(O_sram_rdy),        //Asserted when the fill bank
         
