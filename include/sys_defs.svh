@@ -31,7 +31,7 @@
 
 `define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `MEM_BLOCK_SIZE_BYTES) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
 
-`define NUM_PES `MAX_NUM_PES        // Number of parallel processing elements
+`define NUM_PES 512        // Number of parallel processing elements
 
 `define SRAM_SIZE_KB  128         // Size of SRAM in KB
 
