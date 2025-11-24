@@ -103,24 +103,24 @@ module PE(
         .rdy_out(expmul_ready),
         .m_in(max_score),
         .m_prev_in(max_score_prev),
-        .o_star_prev_in(output_vector),
+        .o_star_prev_in('0),
         .s_in(score_delayed),
         .v_star_in(v_star),
         .exp_v_out(exp_v_vector),
-        .exp_o_out(exp_o_vector)
+        .exp_o_out(output_vector)
     );
 
-    vec_add vec_add_inst (
-        .clk(clk),
-        .rst(rst),
-        .vld_in(expmul_valid),
-        .rdy_in(vector_division_ready),
-        .vld_out(vec_add_valid),
-        .rdy_out(vec_add_ready),
-        .a_in(exp_o_vector),
-        .b_in(exp_v_vector),
-        .sum(output_vector)
-    );
+    // vec_add vec_add_inst (
+    //     .clk(clk),
+    //     .rst(rst),
+    //     .vld_in(expmul_valid),
+    //     .rdy_in(vector_division_ready),
+    //     .vld_out(vec_add_valid),
+    //     .rdy_out(vec_add_ready),
+    //     .a_in(exp_o_vector),
+    //     .b_in(exp_v_vector),
+    //     .sum(output_vector)
+    // );
 
     vector_division vector_division_inst (
         .clk(clk),
