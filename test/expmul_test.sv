@@ -232,7 +232,7 @@ module tb_expmul;
                     //m_prev_send = $urandom_range(-256, 255);
                     s_send = $urandom_range(-256, 255);
                     m_send = $urandom_range(s_send, 255);
-                    m_prev_send = $urandom_range(m_send, 255);
+                    m_prev_send = $urandom_range(-256, m_send);
                 send_tx(m_send, m_prev_send, s_send, v_prev_rand, o_prev_rand);
                 #25;
                 //$display("power thing: %f", (round_half_toward_zero((q44_to_real(s_send)-q44_to_real(m_send)) + (q44_to_real(s_send)-q44_to_real(m_send))/2.0 - (q44_to_real(s_send)-q44_to_real(m_send))/16.0)));

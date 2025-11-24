@@ -30,12 +30,15 @@ module expmul_stage (
     input rdy_in,
     output vld_out,
     output rdy_out,
-
+    
     //Data signals
     input EXPMUL_DIFF_IN_QT a_in, //Q4.4
     input EXPMUL_DIFF_IN_QT b_in, //Q4.4
     input STAR_VECTOR_T v_in, //Q9.17
-    output STAR_VECTOR_T v_out //Q9.17,
+    output STAR_VECTOR_T v_out, //Q9.17,
+
+    //Mode setting
+    input o_star_mode
 );
 
     //Internal Pipeline Registers
@@ -44,7 +47,7 @@ module expmul_stage (
     EXPMUL_DIFF_OUT_QT x_diff;
     EXPMUL_LOG2E_IN_QT x_diff_condensed;
     EXPMUL_LOG2E_OUT_QT log_e_x;
-    STAR_VECTOR_T v;
+    STAR_VECTOR_T v, v_stage_2;
     logic stage_1_valid, stage_2_valid, stage_1_ready, stage_2_ready;
     EXPMUL_SHIFT_STAGE_QT shift_stage_1_1, shift_stage_2_1, shift_stage_3_1, shift_stage_4_1, shift_stage_5_1;
     EXPMUL_EXP_QT l_hat, l_hat_next;
@@ -87,7 +90,7 @@ module expmul_stage (
             if (vld_in && stage_1_ready) begin
                 a <= a_in;
                 b <= b_in;
-                // v <= v_in;
+                v <= v_in;
                 stage_1_valid <= 1'b1;
         end else if (stage_2_ready) begin
             stage_1_valid <= 0;
@@ -112,7 +115,7 @@ module expmul_stage (
 
     generate
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
-            q_convert #(.IN_I(9), .IN_F(23), .OUT_I(9), .OUT_F(17)) (
+            q_convert #(.IN_I(9), .IN_F(23), .OUT_I(9), .OUT_F(17)) v_out_condense(
                 .in(shift_stage_5_result[i]),
                 .out(v_out[i])
             );
@@ -127,6 +130,7 @@ module expmul_stage (
             if (stage_1_valid && stage_2_ready) begin
                 stage_2_valid <= 1'b1;
                 l_hat <= l_hat_next;
+                v_stage_2 <= (o_star_mode == 1) ? v_in : v;
             end else if (rdy_in) begin
                 stage_2_valid <= 1'b0;
             end
@@ -141,7 +145,7 @@ module expmul_stage (
 
     generate 
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM+1; i++) begin : barrel_shift_generate
-            assign shift_stage_1_result[i] = l_hat[4] ? {v_in[i], 6'b000000} >>> 16 : {v_in[i], 6'b000000};
+            assign shift_stage_1_result[i] = l_hat[4] ? {v_stage_2[i], 6'b000000} >>> 16 : {v_stage_2[i], 6'b000000};
             assign shift_stage_2_result[i] = l_hat[3] ? shift_stage_1_result[i] <<< 8 : shift_stage_1_result[i];
             assign shift_stage_3_result[i] = l_hat[2] ? shift_stage_2_result[i] <<< 4 : shift_stage_2_result[i];
             assign shift_stage_4_result[i] = l_hat[1] ? shift_stage_3_result[i] <<< 2 : shift_stage_3_result[i];

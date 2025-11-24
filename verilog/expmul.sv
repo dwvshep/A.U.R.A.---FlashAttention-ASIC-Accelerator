@@ -78,8 +78,8 @@ module expmul(
             kv_counter <= '0;
         end else begin
             if (vld_in && rdy_out) begin
-                kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
                 exp_o_input <= (kv_counter == 0) ? o_star_prev_in : exp_o_out + exp_v_out;
+                kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
             end
         end
     end
@@ -96,7 +96,8 @@ module expmul(
         .a_in(m_prev_in),
         .b_in(m_in),
         .v_in(exp_o_input),
-        .v_out(exp_o_out)
+        .v_out(exp_o_out),
+        .o_star_mode(1'b1)
     );
 
     expmul_stage expmul_v_inst (
@@ -109,7 +110,8 @@ module expmul(
         .a_in(s_in),
         .b_in(m_in),
         .v_in(v_star_in),
-        .v_out(exp_v_out)
+        .v_out(exp_v_out),
+        .o_star_mode(1'b0)
     );
 
 
