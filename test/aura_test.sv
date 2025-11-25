@@ -19,7 +19,7 @@ import "DPI-C" function string decode_inst(int inst);
 //import "DPI-C" function void close_pipeline_output_file();
 
 
-`define TB_MAX_CYCLES 100000
+`define TB_MAX_CYCLES 200000
 
 
 module testbench;
@@ -37,7 +37,6 @@ module testbench;
     logic        reset;
     
     logic [31:0] clock_count; // also used for terminating infinite loops
-    logic [31:0] instr_count;
 
     
     MEM_COMMAND proc2mem_command;
@@ -174,7 +173,6 @@ module testbench;
         if (reset) begin
             // Count the number of cycles and number of instructions committed
             clock_count = 0;
-            instr_count = 0;
         end else begin
             #2; // wait a short time to avoid a clock edge
 

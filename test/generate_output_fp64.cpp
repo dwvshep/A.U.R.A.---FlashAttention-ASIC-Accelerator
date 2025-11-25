@@ -44,7 +44,7 @@ vector<vector<double>> read_mem_matrix(const string &filename) {
             uint64_t val = lines[base_line + l];
             // extract bytes little-endian: byte0 = LSB
             for (int b = 0; b < 8; ++b) {
-                uint8_t byte = (uint8_t)((val >> (8*b)) & 0xFF);
+                int8_t byte = (int8_t)((val >> (8*b)) & 0xFF);
                 M[r][out_index++] = double(byte);
             }
         }
@@ -54,7 +54,7 @@ vector<vector<double>> read_mem_matrix(const string &filename) {
 }
 
 // write a ROWS x COLS matrix of unsigned bytes into output file (same packed format)
-void write_mem_matrix(const string &filename, const vector<vector<uint8_t>> &M) {
+void write_mem_matrix(const string &filename, const vector<vector<int8_t>> &M) {
     ofstream ofs(filename);
     if (!ofs) throw runtime_error("Cannot open for writing " + filename);
     // For each row, write LINES_PER_ROW lines, packing 8 bytes per line with LSB-first byte0
@@ -93,7 +93,7 @@ void print_matrix_hex(const vector<vector<double>> &M, const string &name) {
     cout << "===== Matrix: " << name << " (" << M.size() << " x " << M[0].size() << ") =====\n";
     for (size_t r = 0; r < M.size(); ++r) {
         for (size_t c = 0; c < M[r].size(); ++c) {
-            uint8_t v = (uint8_t)M[r][c];       // convert back to byte
+            int8_t v = (int8_t)M[r][c];       // convert back to byte
             cout << "0x" << uppercase << hex << setw(2) << setfill('0') << (int)v;
             if (c + 1 != M[r].size()) cout << ", ";
         }
@@ -113,10 +113,10 @@ int main(int argc, char **argv) {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    string qfile = "../mem/Q.mem";
-    string kfile = "../mem/K.mem";
-    string vfile = "../mem/V.mem";
-    string outfile = "../mem/O.out";
+    string qfile = "../mem/random_test1/Q.mem";
+    string kfile = "../mem/random_test1/K.mem";
+    string vfile = "../mem/random_test1/V.mem";
+    string outfile = "../mem/random_test1/O_float_correct.out";
 
     if (argc == 4) {
         qfile = argv[1];
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
         print_matrix_hex(Q, "Q");
 
         // Precompute nothing else; run attention: for each i in 0..ROWS-1
-        vector<vector<uint8_t>> O_bytes(ROWS, vector<uint8_t>(COLS, 0));
+        vector<vector<int8_t>> O_bytes(ROWS, vector<int8_t>(COLS, 0));
 
         // temp buffers
         vector<double> scores(ROWS);
@@ -173,13 +173,13 @@ int main(int argc, char **argv) {
                 for (int d = 0; d < COLS; ++d) out[d] += w * vj[d];
             }
 
-            // quantize to [0..255], round to nearest
+            // quantize to [-128...127], round to nearest
             for (int d = 0; d < COLS; ++d) {
                 double v = out[d];
                 long long iv = (long long)llround(v);
-                if (iv < 0) iv = 0;
-                if (iv > 255) iv = 255;
-                O_bytes[i][d] = (uint8_t)iv;
+                if (iv < -128) iv = -128;
+                if (iv > 127) iv = 127;
+                O_bytes[i][d] = (int8_t)iv;
             }
 
             if ((i % 64) == 0) cerr << "Computed row " << i << "/" << ROWS << "\n";

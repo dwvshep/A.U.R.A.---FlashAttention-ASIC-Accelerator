@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <cmath>
 using namespace std;
 
 static constexpr int ROWS = 512;
@@ -6,12 +7,12 @@ static constexpr int COLS = 64;
 static constexpr int LINES_PER_ROW = COLS / 8;
 
 // scale for Q*K dot product (like your FP64 SCALE)
-static constexpr int32_t DOT_SCALE = 1 << 14;  // adjust for precision
+static constexpr int32_t DOT_SCALE = 1 << 8;  // adjust for precision
 
 // softmax scale factor (to keep sum <= 255)
 static constexpr int32_t SOFTMAX_SCALE = 1 << 8;
 
-vector<vector<uint8_t>> read_mem_matrix_u8(const string &filename) {
+vector<vector<int8_t>> read_mem_matrix_8(const string &filename) {
     ifstream ifs(filename);
     if (!ifs) throw runtime_error("Cannot open " + filename);
     vector<uint64_t> lines;
@@ -31,14 +32,14 @@ vector<vector<uint8_t>> read_mem_matrix_u8(const string &filename) {
     if ((int)lines.size() != ROWS * LINES_PER_ROW)
         throw runtime_error("Incorrect line count");
 
-    vector<vector<uint8_t>> M(ROWS, vector<uint8_t>(COLS));
+    vector<vector<int8_t>> M(ROWS, vector<int8_t>(COLS));
     for (int r = 0; r < ROWS; ++r) {
         int base_line = r * LINES_PER_ROW;
         int out_index = 0;
         for (int l = 0; l < LINES_PER_ROW; ++l) {
             uint64_t val = lines[base_line + l];
             for (int b = 0; b < 8; ++b) {
-                uint8_t byte = (uint8_t)((val >> (8*b)) & 0xFF);
+                int8_t byte = (int8_t)((val >> (8*b)) & 0xFF);
                 M[r][out_index++] = byte;
             }
         }
@@ -46,7 +47,7 @@ vector<vector<uint8_t>> read_mem_matrix_u8(const string &filename) {
     return M;
 }
 
-void write_mem_matrix(const string &filename, const vector<vector<uint8_t>> &M) {
+void write_mem_matrix(const string &filename, const vector<vector<int8_t>> &M) {
     ofstream ofs(filename);
     if (!ofs) throw runtime_error("Cannot open " + filename);
     for (int r = 0; r < ROWS; ++r) {
@@ -62,18 +63,19 @@ void write_mem_matrix(const string &filename, const vector<vector<uint8_t>> &M) 
 }
 
 // fixed-point dot product: Q[i]*K[j], accumulate in int32
-inline int32_t dot8(const vector<uint8_t> &a, const vector<uint8_t> &b) {
+inline int32_t dot8(const vector<int8_t> &a, const vector<int8_t> &b) {
     int32_t s = 0;
     for (int i = 0; i < COLS; ++i)
         s += ((int32_t)a[i]) * ((int32_t)b[i]);
-    s = (s * DOT_SCALE) / COLS; // scale down like FP64 SCALE
+    s /= sqrt(COLS); // scale down like FP64 SCALE
+    s /= DOT_SCALE;
     return s;
 }
 
 // fixed-point softmax
-void softmax_fixed(const vector<int32_t> &scores, vector<uint16_t> &weights) {
+void softmax_fixed(const vector<int32_t> &scores, vector<int16_t> &weights) {
     int32_t max_s = *max_element(scores.begin(), scores.end());
-    vector<uint32_t> exp_scores(scores.size());
+    vector<int32_t> exp_scores(scores.size());
     uint64_t sum_exp = 0;
 
     for (size_t j = 0; j < scores.size(); ++j) {
@@ -86,19 +88,19 @@ void softmax_fixed(const vector<int32_t> &scores, vector<uint16_t> &weights) {
     if (sum_exp == 0) sum_exp = 1;
 
     for (size_t j = 0; j < scores.size(); ++j)
-        weights[j] = (uint16_t)((exp_scores[j] * 255) / sum_exp);
+        weights[j] = (int16_t)((exp_scores[j] * 255) / sum_exp);
 }
 
 
 int main() {
-    auto Q = read_mem_matrix_u8("../mem/random_test1/Q.mem");
-    auto K = read_mem_matrix_u8("../mem/random_test1/K.mem");
-    auto V = read_mem_matrix_u8("../mem/random_test1/V.mem");
+    auto Q = read_mem_matrix_8("../mem/random_test1/Q.mem");
+    auto K = read_mem_matrix_8("../mem/random_test1/K.mem");
+    auto V = read_mem_matrix_8("../mem/random_test1/V.mem");
 
-    vector<vector<uint8_t>> O_bytes(ROWS, vector<uint8_t>(COLS,0));
+    vector<vector<int8_t>> O_bytes(ROWS, vector<int8_t>(COLS,0));
 
-    vector<int32_t> scores(ROWS);
-    vector<uint16_t> weights(ROWS);
+    vector<int32_t> scores(ROWS);  
+    vector<int16_t> weights(ROWS);
 
     for (int i = 0; i < ROWS; ++i) {
         // compute Q*K dot

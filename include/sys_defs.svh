@@ -269,7 +269,7 @@ typedef enum logic [1:0] {
 // `define DOT_PRODUCT_DEBUG
 // `define EXPMUL_DEBUG
 // `define MAX_DEBUG
-// `define MEM_CTRL_DEBUG
+`define MEM_CTRL_DEBUG
 // `define KSRAM_DEBUG
 
 

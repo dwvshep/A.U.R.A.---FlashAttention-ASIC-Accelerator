@@ -58,7 +58,8 @@ module memory_controller #(
     // -----------------------------
     Q_VECTOR_T vector_buffer, next_vector_buffer;
     logic [$clog2(`MAX_SEQ_LENGTH)-1:0]      vec_index, next_vec_index, vec_to_fetch, next_vec_to_fetch;     // which vector within the phase
-    logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count, next_blk_count, blk_to_fetch, next_blk_to_fetch;     // 0..BLOCKS_PER_VEC
+    logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count, next_blk_count;             // 0..BLOCKS_PER_VEC
+    logic [$clog2(`MEM_BLOCKS_PER_VECTOR)-1:0] blk_to_fetch, next_blk_to_fetch;     // 0..BLOCKS_PER_VEC-1
     logic [$clog2(VECTOR_BYTES)-1:0] write_index, next_write_index;
     logic                                    have_full_vec; // flag: internal buffer contains a complete vector
     logic buffer_empty;
@@ -162,7 +163,18 @@ module memory_controller #(
                 end
             end
             PH_DRAIN_O: begin
-                proc2mem_command = buffer_empty ? MEM_NONE : MEM_STORE;
+                if(buffer_empty) begin
+                    proc2mem_command = MEM_NONE;
+                    next_blk_to_fetch = '0;
+                end else begin
+                    proc2mem_command = MEM_STORE;
+                    if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
+                        next_blk_to_fetch = '0;
+                        next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
+                    end else begin
+                        next_blk_to_fetch = blk_to_fetch + 1;
+                    end
+                end
             end
             default: proc2mem_command = MEM_NONE;
         endcase
@@ -170,7 +182,10 @@ module memory_controller #(
         //First step is interfacing with sram, whether writing out to QKV or latching in from Osram
         //Phase transition logic is also handled in this first block
         unique case (phase)
-            PH_RESET:   next_phase = PH_LOAD_K;
+            PH_RESET: begin
+                next_phase = PH_LOAD_K;
+                last_blk_fetched_for_load_phase_n = 0;
+            end
 
             PH_LOAD_K: begin
                 //reset internal buffer on handshake and advance to next phase after all K vectors produced to SRAM
@@ -178,7 +193,10 @@ module memory_controller #(
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
-                    if(vec_index == `MAX_SEQ_LENGTH-1) next_phase = PH_LOAD_V;
+                    if(vec_index == `MAX_SEQ_LENGTH-1) begin
+                        next_phase = PH_LOAD_V;
+                        last_blk_fetched_for_load_phase_n = 0;
+                    end
                 end
             end
 
@@ -188,7 +206,10 @@ module memory_controller #(
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
-                    if(vec_index == `MAX_SEQ_LENGTH-1) next_phase = PH_LOAD_Q;
+                    if(vec_index == `MAX_SEQ_LENGTH-1) begin
+                        next_phase = PH_LOAD_Q;
+                        last_blk_fetched_for_load_phase_n = 0;
+                    end
                 end
             end
 
@@ -198,7 +219,10 @@ module memory_controller #(
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
-                    if(vec_index == `MAX_SEQ_LENGTH-1) next_phase = PH_DRAIN_O;
+                    if(vec_index == `MAX_SEQ_LENGTH-1) begin
+                        next_phase = PH_DRAIN_O;
+                        last_blk_fetched_for_load_phase_n = 0;
+                    end
                 end
             end
 
@@ -207,7 +231,7 @@ module memory_controller #(
 
                 //fill internal buffer with drained vector on handshake
                 if(buffer_empty && O_sram_vld) begin
-                    //next_write_index = 0; Should be unnecessary
+                    next_write_index = 0; //Should be unnecessary
                     next_blk_count = `MEM_BLOCKS_PER_VECTOR;
                     next_vector_buffer = drained_vector;
                 end
@@ -218,6 +242,8 @@ module memory_controller #(
                     next_phase = PH_DONE;
                 end
             end
+
+            PH_DONE: next_phase = PH_DONE; //Probably unnecessary or incorrect for multiple runs
 
             default: next_phase = PH_RESET;
         endcase
@@ -263,6 +289,7 @@ module memory_controller #(
             vec_index         <= '0;
             blk_count         <= '0;
             blk_to_fetch      <= '0;
+            vec_to_fetch      <= '0;
             write_index       <= '0;
             //expected_tag_fifo <= '0;
             for (int i = 0; i < `NUM_MEM_TAGS+1; i++) begin
@@ -277,6 +304,7 @@ module memory_controller #(
             vec_index         <= next_vec_index;
             blk_count         <= next_blk_count;
             blk_to_fetch      <= next_blk_to_fetch;
+            vec_to_fetch      <= next_vec_to_fetch;
             write_index       <= next_write_index;
             //expected_tag_fifo <= next_expected_tag_fifo;
             for (int i = 0; i < `NUM_MEM_TAGS+1; i++) begin
@@ -286,6 +314,20 @@ module memory_controller #(
             tag_tail          <= next_tag_tail;
             last_blk_fetched_for_load_phase <= last_blk_fetched_for_load_phase_n;
         end
+        `ifdef MEM_CTRL_DEBUG
+            $display("PHASE: %s", phase.name());
+            $display("BLK_CNT = %0d", blk_count);
+            $display("VEC_INDEX = %0d", vec_index);
+            $display("BLK_FETCH = %0d", blk_to_fetch);
+            $display("VEC_FETCH = %0d", vec_to_fetch);
+            $display("NEXT_TAG = %0d", expected_tag_fifo[tag_head]);
+            //$display("MEM_CTRL_VEC_BUF = %p", vector_buffer);
+            $write("MEM_CTRL_VEC_BUF: ");
+            foreach (vector_buffer[i]) begin
+                $write("%02x ", vector_buffer[i]); //or %0d for decimal val
+            end
+            $write("\n");
+        `endif
     end
 
 
