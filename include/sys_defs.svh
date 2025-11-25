@@ -211,10 +211,10 @@ typedef EXPMUL_SHIFT_STAGE_QT [`MAX_EMBEDDING_DIM+1] EXPMUL_SHIFT_VECTOR_T;
 typedef logic [31:0] ADDR;
 
 //Base Addresses
-parameter ADDR K_BASE = 'h0000_1000;
-parameter ADDR V_BASE = 'h0000_2000;
-parameter ADDR Q_BASE = 'h0000_3000;
-parameter ADDR O_BASE = 'h0000_4000;
+parameter ADDR K_BASE = 32'h0000_0000;   // 0
+parameter ADDR V_BASE = 32'h0000_8000;   // +32 KB
+parameter ADDR Q_BASE = 32'h0001_0000;   // +64 KB
+parameter ADDR O_BASE = 32'h0001_8000;   // +96 KB
 
 `define MEM_LATENCY_IN_CYCLES (100.0/`CLOCK_PERIOD+0.49999)
 // the 0.49999 is to force ceiling(100/period). The default behavior for
@@ -225,7 +225,7 @@ parameter ADDR O_BASE = 'h0000_4000;
 `define NUM_MEM_TAGS 15
 typedef logic [3:0] MEM_TAG;
 
-`define MEM_SIZE_IN_BYTES (64*1024)
+`define MEM_SIZE_IN_BYTES (64*1024*2)
 
 `define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)
 
@@ -259,12 +259,11 @@ typedef enum logic [1:0] {
 ///////////////////////////
 
 //Comment out when synthesizing
-//`define DEBUG 
-
+`define AURA_DEBUG 
 // `define KSRAM_DEBUG
 // `define VSRAM_DEBUG
 // `define QSRAM_DEBUG
-// `define OSRAM_DEBUG
+`define OSRAM_DEBUG
 // `define INT_DIV_DEBUG
 // `define DOT_PRODUCT_DEBUG
 // `define EXPMUL_DEBUG

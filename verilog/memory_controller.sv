@@ -321,6 +321,11 @@ module memory_controller #(
             $display("BLK_FETCH = %0d", blk_to_fetch);
             $display("VEC_FETCH = %0d", vec_to_fetch);
             $display("NEXT_TAG = %0d", expected_tag_fifo[tag_head]);
+            $display("KSRAM_RDY = %0d", K_sram_rdy);
+            $display("VSRAM_RDY = %0d", V_sram_rdy);
+            $display("QSRAM_RDY = %0d", Q_sram_rdy);
+            $display("OSRAM_VLD = %0d", O_sram_vld);
+            $display("LAST_BLK_FLAG = %0d", last_blk_fetched_for_load_phase);
             //$display("MEM_CTRL_VEC_BUF = %p", vector_buffer);
             $write("MEM_CTRL_VEC_BUF: ");
             foreach (vector_buffer[i]) begin

@@ -195,6 +195,15 @@ module testbench;
                 #100 $finish;
             end
         end // if(reset)
+        `ifdef AURA_DEBUG
+            $display("[DIV_DBG] valid_in: %0b, valid_reg: %0b, valid_out: %0b, ready_in: %0b, ready_out: %0b", 
+                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.vld_in,
+                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.valid_reg,
+                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.vld_out,
+                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_in,
+                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_out,
+            );
+        `endif
     end
 
 

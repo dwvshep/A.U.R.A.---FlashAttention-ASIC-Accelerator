@@ -53,7 +53,7 @@ module OSRAM #(
     logic bank0_empty;
     logic bank1_empty;
 
-    // Output data valid when the read bank is full
+    // Output data valid when the read bank is non empty
     assign drain_data_valid = (drain_bank) ? !bank1_empty : !bank0_empty;
 
     // SRAM ready to receive lockstep PE write_data when the fill bank is empty
@@ -64,6 +64,10 @@ module OSRAM #(
 
     always_ff @(posedge clk) begin
         if (rst) begin
+            for (int i = 0; i < NUM_ROWS; i++) begin
+                bank0[i] <= '0;
+                bank1[i] <= '0;
+            end
             drain_bank  <= 0;
             write_bank  <= 0;
             drain_idx   <= '0;
@@ -73,9 +77,13 @@ module OSRAM #(
             // Handle write
             if (write_enable && sram_ready) begin
                 if (write_bank == 0) begin
-                    bank0 <= write_data;
+                    for (int i = 0; i < NUM_ROWS; i++) begin
+                        bank0[i] <= write_data[i];
+                    end
                 end else begin
-                    bank1 <= write_data;
+                    for (int i = 0; i < NUM_ROWS; i++) begin
+                        bank1[i] <= write_data[i];
+                    end
                 end
 
                 if (write_bank == 0) begin
@@ -103,6 +111,35 @@ module OSRAM #(
                 drain_idx <= drain_idx + 1'b1;
             end
         end
+        `ifdef OSRAM_DEBUG
+                $display("OSRAM_RDY = %0d", sram_ready);
+                $display("WRITE_ENABLE = %0d", write_enable);
+                $display("DRAIN_ENABLE = %0d", drain_enable);
+                $display("OSRAM_VLD = %0d", drain_data_valid);
+                $write("OSRAM Dual-Banked: [BANK0] : [BANK1]\n");
+                for(int i = 0; i < 3; i++) begin
+                    $write("Row[%0d]: ", i);
+                    foreach (bank0[i][j]) begin
+                        $write("%02x ", bank0[i][j]); //or %0d for decimal val
+                    end
+                    $write(": ");
+                    foreach (bank1[i][j]) begin
+                        $write("%02x ", bank1[i][j]); //or %0d for decimal val
+                    end
+                    $write("\n");
+                end
+                for(int i = NUM_ROWS - 3; i < NUM_ROWS; i++) begin
+                    $write("Row[%0d]: ", i);
+                    foreach (bank0[i][j]) begin
+                        $write("%02x ", bank0[i][j]); //or %0d for decimal val
+                    end
+                    $write(": ");
+                    foreach (bank1[i][j]) begin
+                        $write("%02x ", bank1[i][j]); //or %0d for decimal val
+                    end
+                    $write("\n");
+                end
+            `endif
     end
 
 endmodule

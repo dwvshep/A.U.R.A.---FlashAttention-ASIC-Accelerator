@@ -39,8 +39,6 @@ module PE(
     logic max_ready;
     logic expmul_valid;
     logic expmul_ready;
-    logic vec_add_valid;
-    logic vec_add_ready;
     logic vector_division_ready;
 
     //Generate v_star by appending 1 to v_vector_double_delayed and converting to Q9.8
@@ -98,7 +96,7 @@ module PE(
         .clk(clk),
         .rst(rst),
         .vld_in(max_valid),
-        .rdy_in(vec_add_ready),
+        .rdy_in(vector_division_ready),
         .vld_out(expmul_valid),
         .rdy_out(expmul_ready),
         .m_in(max_score),
@@ -112,7 +110,7 @@ module PE(
     vector_division vector_division_inst (
         .clk(clk),
         .rst(rst),
-        .vld_in(vec_add_valid),
+        .vld_in(expmul_valid),
         .rdy_in(O_sram_rdy),
         .vld_out(output_valid),
         .rdy_out(vector_division_ready),

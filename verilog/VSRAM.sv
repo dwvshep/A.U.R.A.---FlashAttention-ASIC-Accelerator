@@ -58,6 +58,23 @@ module VSRAM #(
                 head <= head + 1;
             end
         end
+        `ifdef VSRAM_DEBUG
+            $write("VSRAM FIFO: ");
+            for(int i = 0; i < 3; i++) begin
+                $write("Entry[%0d]: ", i);
+                foreach (fifo[i][j]) begin
+                    $write("%02x ", fifo[i][j]); //or %0d for decimal val
+                end
+                $write("\n");
+            end
+            for(int i = NUM_ENTRIES - 4; i < NUM_ENTRIES; i++) begin
+                $write("Entry[%0d]: ", i);
+                foreach (fifo[i][j]) begin
+                    $write("%02x ", fifo[i][j]); //or %0d for decimal val
+                end
+                $write("\n");
+            end
+        `endif
     end
 
 endmodule

@@ -64,6 +64,10 @@ module QSRAM #(
 
     always_ff @(posedge clk) begin
         if (rst) begin
+            for (int i = 0; i < NUM_ROWS; i++) begin
+                bank0[i] <= '0;
+                bank1[i] <= '0;
+            end
             read_bank  <= 0;
             fill_bank  <= 0;
             wr_idx     <= '0;
@@ -105,6 +109,31 @@ module QSRAM #(
                     bank1_full <= 1'b0;
                 end
             end
+            `ifdef QSRAM_DEBUG
+                $write("QSRAM Dual-Banked: [BANK0] : [BANK1]\n");
+                for(int i = 0; i < 3; i++) begin
+                    $write("Row[%0d]: ", i);
+                    foreach (bank0[i][j]) begin
+                        $write("%02x ", bank0[i][j]); //or %0d for decimal val
+                    end
+                    $write(": ");
+                    foreach (bank1[i][j]) begin
+                        $write("%02x ", bank1[i][j]); //or %0d for decimal val
+                    end
+                    $write("\n");
+                end
+                for(int i = NUM_ROWS - 3; i < NUM_ROWS; i++) begin
+                    $write("Row[%0d]: ", i);
+                    foreach (bank0[i][j]) begin
+                        $write("%02x ", bank0[i][j]); //or %0d for decimal val
+                    end
+                    $write(": ");
+                    foreach (bank1[i][j]) begin
+                        $write("%02x ", bank1[i][j]); //or %0d for decimal val
+                    end
+                    $write("\n");
+                end
+            `endif
         end
     end
 

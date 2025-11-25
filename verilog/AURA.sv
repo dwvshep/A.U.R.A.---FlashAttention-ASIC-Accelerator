@@ -158,4 +158,16 @@ module AURA(
         end
     endgenerate
 
+    // `ifdef AURA_DEBUG
+    //     always_ff @(posedge clk) begin
+    //         $display("[DIV_DBG] valid_in: %0b, valid_reg: %0b, valid_out: %0b, ready_in: %0b, ready_out: %0b", 
+    //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.vld_in,
+    //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.valid_reg,
+    //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.vld_out,
+    //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.rdy_in,
+    //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.rdy_out,
+    //         );
+    //     end
+    // `endif
+
 endmodule

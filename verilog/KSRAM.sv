@@ -59,8 +59,20 @@ module KSRAM #(
             end
         end
         `ifdef KSRAM_DEBUG
-            for(int i = 0; i < NUM_ENTRIES; i++) begin
-                $display("KSRAM_ENTRY[%0d] = %p", i, fifo[i]);
+            $write("KSRAM FIFO: ");
+            for(int i = 0; i < 3; i++) begin
+                $write("Entry[%0d]: ", i);
+                foreach (fifo[i][j]) begin
+                    $write("%02x ", fifo[i][j]); //or %0d for decimal val
+                end
+                $write("\n");
+            end
+            for(int i = NUM_ENTRIES - 4; i < NUM_ENTRIES; i++) begin
+                $write("Entry[%0d]: ", i);
+                foreach (fifo[i][j]) begin
+                    $write("%02x ", fifo[i][j]); //or %0d for decimal val
+                end
+                $write("\n");
             end
         `endif
     end
