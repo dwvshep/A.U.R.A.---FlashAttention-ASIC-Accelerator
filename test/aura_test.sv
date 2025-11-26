@@ -283,29 +283,29 @@ module testbench;
                 );
                 $display("expmul_o_in: ");
                 foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_stage_2[i]) begin
-                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_in[i]); //or %0d for decimal val
+                    $write("%f ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_in[i] / real'(1 << `EXPMUL_VEC_F)); //or %0d for decimal val
                 end
                 $write("\n");
                 $display("expmul_o_out: ");
                 foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_out[i]) begin
-                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_out[i]); //or %0d for decimal val
+                    $write("%f ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_out[i] / real'(1 << `EXPMUL_VEC_F)); //or %0d for decimal val
                 end
                 $write("\n");
                 $display("expmul_v_in: ");
                 foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_in[i]) begin
-                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_in[i]); //or %0d for decimal val
+                    $write("%f ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_in[i] / real'(1 << `EXPMUL_VEC_F)); //or %0d for decimal val
                 end
                 $write("\n");
                 $display("expmul_v_out: ");
                 foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_out[i]) begin
-                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_out[i]); //or %0d for decimal val
+                    $write("%f ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_out[i] / real'(1 << `EXPMUL_VEC_F)); //or %0d for decimal val
                 end
                 $write("\n");
             `endif
             `ifdef VEC_DEBUG
                 $write("[VEC_DIV_DBG] vec_in: ");
                 foreach (AURA_dut.gen_pe[1].pe_inst.vector_division_inst.vec_in[i]) begin
-                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.vec_in[i]); //or %0d for decimal val
+                    $write("%f ", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.vec_in[i] / real'(1 << `EXPMUL_VEC_F)); //or %0d for decimal val
                 end
                 $write("\n");
             `endif
@@ -317,6 +317,10 @@ module testbench;
                     AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_in,
                     AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_out
                 );
+                $display("numerator_in: %f", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.numerator_in / real'(1 << `DIV_INPUT_F));
+                $display("denominator_in: %f", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.denominator_in / real'(1 << `DIV_INPUT_F));
+                //$display("abs_num: %f", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.abs_num);
+                //$display("abs_den: %f", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.abs_den);
             `endif 
         `endif
     end

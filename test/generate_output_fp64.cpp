@@ -5,6 +5,7 @@ static constexpr int ROWS = 512;      // number of matrix rows
 static constexpr int COLS = 64;       // number of datapoints per row
 static constexpr int LINES_PER_ROW = COLS / 8; // 8 lines per row
 static constexpr double SCALE = 1.0 / sqrt((double)COLS);
+static constexpr double Q_FACTOR = 128;
 
 // read a mem file (lines of 16-hex chars) and return a ROWS x COLS matrix (float)
 vector<vector<double>> read_mem_matrix(const string &filename) {
@@ -45,7 +46,7 @@ vector<vector<double>> read_mem_matrix(const string &filename) {
             // extract bytes little-endian: byte0 = LSB
             for (int b = 0; b < 8; ++b) {
                 int8_t byte = (int8_t)((val >> (8*b)) & 0xFF);
-                M[r][out_index++] = double(byte);
+                M[r][out_index++] = double(byte) / Q_FACTOR;
             }
         }
         if (out_index != COLS) throw runtime_error("internal indexing error");
@@ -54,7 +55,7 @@ vector<vector<double>> read_mem_matrix(const string &filename) {
 }
 
 // write a ROWS x COLS matrix of unsigned bytes into output file (same packed format)
-void write_mem_matrix(const string &filename, const vector<vector<int8_t>> &M) {
+void write_mem_matrix(const string &filename, const vector<vector<double>> &M) {
     ofstream ofs(filename);
     if (!ofs) throw runtime_error("Cannot open for writing " + filename);
     // For each row, write LINES_PER_ROW lines, packing 8 bytes per line with LSB-first byte0
@@ -63,7 +64,10 @@ void write_mem_matrix(const string &filename, const vector<vector<int8_t>> &M) {
         for (int l = 0; l < LINES_PER_ROW; ++l) {
             uint64_t packed = 0;
             for (int b = 0; b < 8; ++b) {
-                uint64_t byte = M[r][l*8 + b];
+                long long iv = (long long)lround(M[r][l*8 + b] * Q_FACTOR);
+                if (iv < -128) iv = -128;
+                if (iv > 127) iv = 127;
+                uint64_t byte = (uint64_t(int8_t(iv)));
                 packed |= (byte & 0xFFULL) << (8*b); // LSB-first
             }
             // print as 16 hex chars uppercase
@@ -139,6 +143,9 @@ int main(int argc, char **argv) {
 
         print_matrix_hex(Q, "Q");
 
+
+        //fp64 output matrix
+        vector<vector<double>> O_floats(ROWS, vector<double>(COLS, 0));
         // Precompute nothing else; run attention: for each i in 0..ROWS-1
         vector<vector<int8_t>> O_bytes(ROWS, vector<int8_t>(COLS, 0));
 
@@ -173,20 +180,27 @@ int main(int argc, char **argv) {
                 for (int d = 0; d < COLS; ++d) out[d] += w * vj[d];
             }
 
-            // quantize to [-128...127], round to nearest
+
+            //write to output float matrix
             for (int d = 0; d < COLS; ++d) {
-                double v = out[d];
-                long long iv = (long long)llround(v);
-                if (iv < -128) iv = -128;
-                if (iv > 127) iv = 127;
-                O_bytes[i][d] = (int8_t)iv;
+                O_floats[i][d] = out[d];
             }
+
+            // quantize to [-128...127], round to nearest
+            // for (int d = 0; d < COLS; ++d) {
+            //     double v = out[d];
+            //     long long iv = (long long)llround(v);
+            //     if (iv < -128) iv = -128;
+            //     if (iv > 127) iv = 127;
+            //     O_bytes[i][d] = (int8_t)iv;
+            // }
 
             if ((i % 64) == 0) cerr << "Computed row " << i << "/" << ROWS << "\n";
         }
 
         cerr << "Writing " << outfile << " ...\n";
-        write_mem_matrix(outfile, O_bytes);
+        write_mem_matrix(outfile, O_floats);
+        // write_mem_matrix(outfile, O_bytes);
         cerr << "Done. Output written to " << outfile << "\n";
     } catch (const exception &e) {
         cerr << "ERROR: " << e.what() << "\n";

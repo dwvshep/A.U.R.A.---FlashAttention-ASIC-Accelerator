@@ -13,7 +13,7 @@ static constexpr double THRESHOLD_REL_ERROR = 0.1; // 10%
 static constexpr double THRESHOLD_TOP1_MATCH = 0.95; // 95%
 
 // read a packed mem file into ROWS x COLS uint8 matrix
-vector<vector<uint8_t>> read_mem_matrix(const string &filename) {
+vector<vector<int8_t>> read_mem_matrix(const string &filename) {
     ifstream ifs(filename);
     if (!ifs) throw runtime_error("Cannot open " + filename);
 
@@ -34,14 +34,14 @@ vector<vector<uint8_t>> read_mem_matrix(const string &filename) {
     if ((int)lines.size() != ROWS * LINES_PER_ROW)
         throw runtime_error("Incorrect line count");
 
-    vector<vector<uint8_t>> M(ROWS, vector<uint8_t>(COLS));
+    vector<vector<int8_t>> M(ROWS, vector<int8_t>(COLS));
     for (int r = 0; r < ROWS; ++r) {
         int base_line = r * LINES_PER_ROW;
         int out_index = 0;
         for (int l = 0; l < LINES_PER_ROW; ++l) {
             uint64_t val = lines[base_line + l];
             for (int b = 0; b < 8; ++b) {
-                uint8_t byte = (uint8_t)((val >> (8*b)) & 0xFF);
+                int8_t byte = (int8_t)((val >> (8*b)) & 0xFF);
                 M[r][out_index++] = byte;
             }
         }
@@ -50,8 +50,8 @@ vector<vector<uint8_t>> read_mem_matrix(const string &filename) {
 }
 
 // compute precision/error metrics
-void compare_outputs(const vector<vector<uint8_t>> &ref,
-                     const vector<vector<uint8_t>> &asic) {
+void compare_outputs(const vector<vector<int8_t>> &ref,
+                     const vector<vector<int8_t>> &asic) {
     if (ref.size() != asic.size() || ref[0].size() != asic[0].size())
         throw runtime_error("Matrix dimensions do not match");
 

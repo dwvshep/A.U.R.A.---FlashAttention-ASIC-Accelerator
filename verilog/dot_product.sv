@@ -170,6 +170,35 @@ module dot_product (
         .out(s_out) //s_out
     );
 
-    assign v_out = v;
+    // Pipeline delay matching tree latency
+    V_VECTOR_T v_pipe [`NUM_REDUCE_STAGES];
+    logic      v_valid_pipe [`NUM_REDUCE_STAGES];
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            for (int i = 0; i < `NUM_REDUCE_STAGES; i++) begin
+                v_pipe[i] <= '0;
+                v_valid_pipe[i] <= 1'b0;
+            end
+        end else begin
+            // stage 0 gets new v when tree receives valid input
+            if (all_valid && rdy_in) begin
+                v_pipe[0] <= v;
+                v_valid_pipe[0] <= 1'b1;
+            end else begin
+                v_valid_pipe[0] <= 1'b0;
+            end
+
+            // shift pipeline
+            for (int i = 1; i < `NUM_REDUCE_STAGES; i++) begin
+                v_pipe[i] <= v_pipe[i-1];
+                v_valid_pipe[i] <= v_valid_pipe[i-1];
+            end
+        end
+    end
+
+    assign v_out = v_pipe[`NUM_REDUCE_STAGES-1];
+
+    //assign v_out = v;
 
 endmodule
