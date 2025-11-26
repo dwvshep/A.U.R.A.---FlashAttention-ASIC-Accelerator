@@ -52,6 +52,7 @@ module expmul_stage (
     logic stage_1_valid, stage_2_valid, stage_1_ready, stage_2_ready;
     EXPMUL_SHIFT_STAGE_QT shift_stage_1_1, shift_stage_2_1, shift_stage_3_1, shift_stage_4_1, shift_stage_5_1;
     EXPMUL_EXP_QT l_hat, l_hat_next;
+    EXPMUL_SHIFT_VECTOR_T v_stage_2_expanded;
     EXPMUL_SHIFT_VECTOR_T shift_stage_1_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_2_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_3_result; //Q9.23
@@ -130,6 +131,16 @@ module expmul_stage (
         end
     endgenerate
 
+    generate
+        for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
+            q_convert #(.IN_I(9), .IN_F(17), .OUT_I(9), .OUT_F(23)) v_stage_expand(
+                .in(v_stage_2[i]),
+                .out(v_stage_2_expanded[i])
+            );
+        end
+    endgenerate
+            
+
     //Second stage: 2^-L * V
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -158,7 +169,7 @@ module expmul_stage (
 
     generate    
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM+1; i++) begin : barrel_shift_generate
-            assign shift_stage_1_result[i] = l_hat[4] ? {v_stage_2[i], 6'b000000} >>> 16 : {v_stage_2[i], 6'b000000};
+            assign shift_stage_1_result[i] = l_hat[4] ? v_stage_2_expanded[i] >>> 16 : v_stage_2_expanded[i];
             assign shift_stage_2_result[i] = l_hat[3] ? shift_stage_1_result[i] <<< 8 : shift_stage_1_result[i];
             assign shift_stage_3_result[i] = l_hat[2] ? shift_stage_2_result[i] <<< 4 : shift_stage_2_result[i];
             assign shift_stage_4_result[i] = l_hat[1] ? shift_stage_3_result[i] <<< 2 : shift_stage_3_result[i];

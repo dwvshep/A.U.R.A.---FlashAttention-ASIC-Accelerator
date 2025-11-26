@@ -17,11 +17,12 @@ module expmul(
     input STAR_VECTOR_T o_star_prev_in,
     input EXPMUL_DIFF_IN_QT s_in,
     input STAR_VECTOR_T v_star_in,
+    output STAR_VECTOR_T exp_v_out,
     output STAR_VECTOR_T exp_o_out
 );
 
     //Internal Pipeline Registers
-    STAR_VECTOR_T exp_v_out;
+    // STAR_VECTOR_T exp_v_out;
     EXPMUL_DIFF_IN_QT m;
     EXPMUL_DIFF_IN_QT m_prev;
     EXPMUL_DIFF_IN_QT s;
