@@ -28,11 +28,11 @@ module expmul(
     STAR_VECTOR_T o_star_prev;
     STAR_VECTOR_T v_star;
     logic expmul_o_valid, expmul_o_rdy, expmul_v_valid, expmul_v_rdy;
-    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] kv_counter;
+    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] kv_counter_1, kv_counter_2;
     STAR_VECTOR_T exp_o_out_partial, exp_o_out_partial_reg, exp_o_input;
 
-    assign vld_out = expmul_o_valid && expmul_v_valid && (kv_counter == 0);
-    assign rdy_out = (expmul_o_rdy && expmul_v_rdy) || !(expmul_o_valid && expmul_v_valid);
+    assign vld_out = expmul_o_valid && expmul_v_valid && (kv_counter_1 == 0);
+    assign rdy_out = (expmul_o_rdy && expmul_v_rdy) || (!expmul_o_valid && !expmul_v_valid);
 
     generate
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
@@ -41,57 +41,11 @@ module expmul(
     endgenerate
     
 
-    //Latch inputs first
-    // always_ff @(posedge clk) begin
-    //     if(rst) begin
-    //         m <= '0;
-    //         m_prev <= '0;
-    //         o_star_prev <= '0;
-    //         s <= '0;
-    //         v_star <= '0;
-    //         valid_reg <= 1'b0;
-    //     end else begin
-    //         if(vld_in && rdy_out) begin //Handshake successful
-    //             m <= m_in;
-    //             m_prev <= m_prev_in;
-    //             o_star_prev <= o_star_prev_in;
-    //             s <= s_in;
-    //             v_star <= v_star_in;
-    //             valid_reg <= 1'b1;
-    //         end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
-    //             valid_reg <= 1'b0;
-    //         end
-    //     end
-    // end
+    assign exp_o_input = (kv_counter_1 == 0) ? o_star_prev_in : exp_o_out;
+                //o_star_prev_in : exp_o_out_partial + exp_v_out;
+                // kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
 
-
-    //Use these blocks if expmul is combinational
-    // expmul_comb expmul_o_inst (
-    //     .a_in(m_prev),
-    //     .b_in(m),
-    //     .v_in(o_star_prev),
-    //     .v_out(exp_o_out)
-    // );
-
-    // expmul_comb expmul_v_inst (
-    //     .a_in(s),
-    //     .b_in(m),
-    //     .v_in(v_star),
-    //     .v_out(exp_v_out)
-    // );
-    always_ff @(posedge clk) begin
-        if (rst)begin
-            kv_counter <= '0;
-        end else begin
-            if (vld_in && rdy_out) begin
-                exp_o_input <= (kv_counter == 0) ? o_star_prev_in : exp_o_out_partial + exp_v_out;
-                kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
-            end
-        end
-    end
-    //Use these if expmul is pipelined
-    //But remember to not latch inputs in this top module so you dont waste an extra cycle
-    //Also add support for internal valid-ready signals
+ 
     expmul_stage expmul_o_inst (
         .clk(clk),
         .rst(rst),
@@ -103,7 +57,8 @@ module expmul(
         .b_in(m_in),
         .v_in(exp_o_input),
         .v_out(exp_o_out_partial),
-        .o_star_mode(1'b1)
+        .o_star_mode(1'b1),
+        .kv_counter(kv_counter_1)
     );
 
     expmul_stage expmul_v_inst (
@@ -117,7 +72,8 @@ module expmul(
         .b_in(m_in),
         .v_in(v_star_in),
         .v_out(exp_v_out),
-        .o_star_mode(1'b0)
+        .o_star_mode(1'b0),
+        .kv_counter(kv_counter_2)
     );
 
 

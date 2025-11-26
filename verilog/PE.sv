@@ -41,9 +41,9 @@ module PE(
     logic expmul_ready;
     logic vector_division_ready;
 
-    //Generate v_star by appending 1 to v_vector_double_delayed and converting to Q9.8
+    //Generate v_star by appending 1 to v_vector_double_delayed and converting to Q9.17
     generate
-        assign v_star[0] = 1;
+        assign v_star[0] = 1 << `EXPMUL_VEC_F;
         for(genvar v = 1; v <= `MAX_EMBEDDING_DIM; v++) begin
             q_convert #(
                 .IN_I(`INPUT_VEC_I), 

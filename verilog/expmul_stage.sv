@@ -36,6 +36,7 @@ module expmul_stage (
     input EXPMUL_DIFF_IN_QT b_in, //Q4.4
     input STAR_VECTOR_T v_in, //Q9.17
     output STAR_VECTOR_T v_out, //Q9.17,
+    output logic [$clog2(`MAX_SEQ_LENGTH)-1:0] kv_counter,
 
     //Mode setting
     input o_star_mode
@@ -56,6 +57,7 @@ module expmul_stage (
     EXPMUL_SHIFT_VECTOR_T shift_stage_3_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_4_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_5_result; //Q9.23
+    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] kv_counter;
 
     `Q_TYPE(6, 4) log_e_x_test;
     `Q_TYPE(5, 4) x_diff_expanded;
@@ -132,11 +134,15 @@ module expmul_stage (
     always_ff @(posedge clk) begin
         if (rst) begin
             stage_2_valid <= 1'b0;
+            l_hat <= '0;
+            v_stage_2 <= '0;
+            kv_counter <= '0;
         end else begin
             if (stage_1_valid && stage_2_ready) begin
                 stage_2_valid <= 1'b1;
                 l_hat <= l_hat_next;
                 v_stage_2 <= (o_star_mode == 1) ? v_in : v;
+                kv_counter <= (kv_counter == 0) ? `MAX_SEQ_LENGTH-1 : kv_counter - 1;
             end else if (rdy_in) begin
                 stage_2_valid <= 1'b0;
             end
@@ -150,7 +156,7 @@ module expmul_stage (
         // log_e_x_test = x_diff_expanded + (x_diff_expanded >>> 1) - (x_diff_expanded >>> 4);
     end
 
-    generate 
+    generate    
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM+1; i++) begin : barrel_shift_generate
             assign shift_stage_1_result[i] = l_hat[4] ? {v_stage_2[i], 6'b000000} >>> 16 : {v_stage_2[i], 6'b000000};
             assign shift_stage_2_result[i] = l_hat[3] ? shift_stage_1_result[i] <<< 8 : shift_stage_1_result[i];

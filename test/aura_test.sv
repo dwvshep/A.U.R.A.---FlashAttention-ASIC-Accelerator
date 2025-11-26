@@ -111,6 +111,22 @@ module testbench;
     initial begin
         //$dumpfile("../aura.vcd");
         //$dumpvars(0, testbench.AURA_dut);
+
+        $display("QTYPES:");
+        $display("EXPMUL_DIFF_IN_QT: Q(%0d,%0d)", `EXPMUL_DIFF_IN_I, `EXPMUL_DIFF_IN_F);
+        $display("PRODUCT_QT: Q(%0d,%0d)", `PRODUCT_I, `PRODUCT_F);
+        $display("INTERMEDIATE_PRODUCT_QT: Q(%0d,%0d)", `INTERMEDIATE_PRODUCT_I, `INTERMEDIATE_PRODUCT_F);
+        $display("DOT_QT: Q(%0d,%0d)", `DOT_I, `DOT_F);
+
+        $display("EXPMUL_DIFF_OUT_QT: Q(%0d,%0d)", `EXPMUL_DIFF_OUT_I, `EXPMUL_DIFF_OUT_F);
+        $display("EXPMUL_LOG2E_IN_QT: Q(%0d,%0d)", `EXP_LOG2E_IN_I, `EXP_LOG2E_IN_F);
+        $display("EXPMUL_LOG2E_OUT_QT: Q(%0d,%0d)", `EXP_LOG2E_OUT_I, `EXP_LOG2E_OUT_F);
+        $display("EXPMUL_EXP_QT: Q(%0d,%0d)", `EXPMUL_EXP_I, `EXPMUL_EXP_F);
+
+        $display("EXPMUL_SHIFT_STAGE_QT: Q(%0d,%0d)", `EXPMUL_SHIFT_STAGE_I, `EXPMUL_SHIFT_STAGE_F);
+        $display("EXPMUL_VEC_QT: Q(%0d,%0d)", `EXPMUL_VEC_I, `EXPMUL_VEC_F);
+        $display("DIV_INPUT_QT: Q(%0d,%0d)", `DIV_INPUT_I, `DIV_INPUT_F);
+
         $display("\n---- Starting CPU Testbench ----\n");
 
         // set paramterized strings, see comment at start of module
@@ -196,13 +212,112 @@ module testbench;
             end
         end // if(reset)
         `ifdef AURA_DEBUG
-            $display("[DIV_DBG] valid_in: %0b, valid_reg: %0b, valid_out: %0b, ready_in: %0b, ready_out: %0b", 
-                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.vld_in,
-                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.valid_reg,
-                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.vld_out,
-                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_in,
-                AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_out,
-            );
+            `ifdef DOT_PRODUCT_DEBUG
+                $write("[DOT_PROD_DBG]\n");
+                $write("q: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.dot_product_inst.q[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.q[i]); //or %0d for decimal val
+                end
+                $write("\n");
+                $write("k: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.dot_product_inst.k[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.k[i]); //or %0d for decimal val
+                end
+                $write("\n");
+                $write("v: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.dot_product_inst.v[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.v[i]); //or %0d for decimal val
+                end
+                $write("\n");
+                $display("valid_q: %0b", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.valid_q);
+                $display("valid_k: %0b", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.valid_k);
+                $display("valid_v: %0b", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.valid_v);
+                $display("row_counter: %0d", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.row_counter);
+                $display("vld_out: %0b", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.vld_out);
+                $display("s_out: %9b", AURA_dut.gen_pe[1].pe_inst.dot_product_inst.s_out);
+            `endif
+            `ifdef MAX_DEBUG
+                $display("[MAX_DEBUG]");
+                $display("valid_in: %0b", AURA_dut.gen_pe[1].pe_inst.max_inst.vld_in);
+                $display("valid_out: %0d", AURA_dut.gen_pe[1].pe_inst.max_inst.vld_out);
+                $display("ready_in: %0b", AURA_dut.gen_pe[1].pe_inst.max_inst.rdy_in);
+                $display("ready_out: %0d", AURA_dut.gen_pe[1].pe_inst.max_inst.rdy_out);
+                $display("v_in: %9b", AURA_dut.gen_pe[1].pe_inst.max_inst.v_in);
+                $display("m_prev_in: %9b", AURA_dut.gen_pe[1].pe_inst.max_inst.m_prev_in);
+                $display("s_in: %9b", AURA_dut.gen_pe[1].pe_inst.max_inst.s_in);
+                $display("s_out: %9b", AURA_dut.gen_pe[1].pe_inst.max_inst.s_out);
+            `endif
+            `ifdef EXPMUL_DEBUG
+                $display("[EXPMUL_DBG] valid_in: %0b, stage_1_valid: %0b, stage_1_ready: %0b, stage_2_valid: %0b, stage_2_ready: %0b, valid_out: %0b, ready_out: %0b",
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.vld_in,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.stage_1_valid,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.stage_1_ready,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.stage_2_valid,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.stage_2_ready,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.vld_out,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.rdy_out
+                );
+                $display("[EXPMUL_STAGE_DBG] l_hat_o: %5b, x_diff_o: %10b, l_hat_v: %5b, x_diff_v: %10b, a_in_o: %9b, b_in_o: %9b, a_in_v: %9b, b_in_v: %9b",
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.l_hat,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.x_diff,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.l_hat,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.x_diff,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.a_in,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.b_in,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.a_in,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.b_in
+                );
+                $display("[EXPMUL_STAGES_O_DBG] stage_1: %02x, stage_2: %02x, stage_3: %03x, stage_4: %04x, stage_5: %05x",
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.shift_stage_1_1,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.shift_stage_2_1,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.shift_stage_3_1, 
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.shift_stage_4_1,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.shift_stage_5_1
+                );
+                $display("[EXPMUL_STAGES_V_DBG] stage_1: %02x, stage_2: %02x, stage_3: %03x, stage_4: %04x, stage_5: %05x",
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.shift_stage_1_1,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.shift_stage_2_1,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.shift_stage_3_1, 
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.shift_stage_4_1,
+                    AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.shift_stage_5_1
+                );
+                $display("expmul_o_in: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_stage_2[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_in[i]); //or %0d for decimal val
+                end
+                $write("\n");
+                $display("expmul_o_out: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_out[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_o_inst.v_out[i]); //or %0d for decimal val
+                end
+                $write("\n");
+                $display("expmul_v_in: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_in[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_in[i]); //or %0d for decimal val
+                end
+                $write("\n");
+                $display("expmul_v_out: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_out[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_out[i]); //or %0d for decimal val
+                end
+                $write("\n");
+            `endif
+            `ifdef VEC_DEBUG
+                $write("[VEC_DIV_DBG] vec_in: ");
+                foreach (AURA_dut.gen_pe[1].pe_inst.vector_division_inst.vec_in[i]) begin
+                    $write("%02x ", AURA_dut.gen_pe[1].pe_inst.vector_division_inst.vec_in[i]); //or %0d for decimal val
+                end
+                $write("\n");
+            `endif
+            `ifdef INT_DIV_DEBUG
+                $display("[INT_DIV_DBG] valid_in: %0b, valid_reg: %0b, valid_out: %0b, ready_in: %0b, ready_out: %0b", 
+                    AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.vld_in,
+                    AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.valid_reg,
+                    AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.vld_out,
+                    AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_in,
+                    AURA_dut.gen_pe[1].pe_inst.vector_division_inst.gen_div[1].div_inst.rdy_out
+                );
+            `endif 
         `endif
     end
 

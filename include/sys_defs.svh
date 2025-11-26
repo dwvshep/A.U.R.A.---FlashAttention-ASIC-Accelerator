@@ -264,13 +264,11 @@ typedef enum logic [1:0] {
 // `define VSRAM_DEBUG
 // `define QSRAM_DEBUG
 `define OSRAM_DEBUG
-// `define INT_DIV_DEBUG
-// `define DOT_PRODUCT_DEBUG
-// `define EXPMUL_DEBUG
-// `define MAX_DEBUG
+`define INT_DIV_DEBUG
+`define VEC_DEBUG
+`define DOT_PRODUCT_DEBUG
+`define EXPMUL_DEBUG
+`define MAX_DEBUG
 `define MEM_CTRL_DEBUG
-// `define KSRAM_DEBUG
-
-
 
 `endif
