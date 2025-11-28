@@ -68,7 +68,7 @@ module expmul_stage (
     assign v_out_1 = v_out[1];
     assign v_out_0 = v_out[0];
 
-    assign stage_2_ready = rdy_in;
+    assign stage_2_ready = rdy_in || (kv_counter > 0);
     assign stage_1_ready = (!stage_1_valid) || stage_2_ready;
     assign rdy_out = stage_1_ready;
     assign vld_out = stage_2_valid;

@@ -26,6 +26,7 @@ module max(
     EXPMUL_DIFF_IN_QT m_prev;
     V_VECTOR_T v;
     logic valid_reg;
+    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] row_counter;
 
     assign vld_out = valid_reg;
     assign rdy_out = rdy_in || !valid_reg;
@@ -37,12 +38,14 @@ module max(
             m_prev <= '0;
             v <= '0;
             valid_reg <= 1'b0;
+            row_counter <= '0;
         end else begin
             if(vld_in && rdy_out) begin //Handshake successful
                 s <= s_in;
-                m_prev <= m_prev_in;
+                m_prev <= (row_counter == 0) ? '0 : m_prev_in;
                 v <= v_in;
                 valid_reg <= 1'b1;
+                row_counter <= row_counter - 1;
             end else if(rdy_in) begin //Only downstream is ready (clear internal pipeline)
                 valid_reg <= 1'b0;
             end

@@ -98,6 +98,11 @@ module OSRAM #(
             // Handle drain
             // When memory drains the entire drain bank, assert its empty flag.
             if (drain_enable && drain_data_valid) begin
+                if (drain_bank == 0) begin
+                        bank0[drain_idx] <= '0;
+                    end else begin
+                        bank1[drain_idx] <= '0;
+                    end
                 if (drain_idx == NUM_ROWS-1) begin
                     drain_bank <= ~drain_bank;
                     if (drain_bank == 0) begin
@@ -116,6 +121,8 @@ module OSRAM #(
                 $display("WRITE_ENABLE = %0d", write_enable);
                 $display("DRAIN_ENABLE = %0d", drain_enable);
                 $display("OSRAM_VLD = %0d", drain_data_valid);
+                $display("DRAIN_BANK = %0d", drain_bank);
+                $display("WRITE_BANK = %0d", write_bank);
                 $write("OSRAM Dual-Banked: [BANK0] : [BANK1]\n");
                 for(int i = 0; i < 3; i++) begin
                     $write("Row[%0d]: ", i);

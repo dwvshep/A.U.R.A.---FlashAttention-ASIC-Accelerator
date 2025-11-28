@@ -61,8 +61,9 @@ module memory_controller #(
     logic [$clog2(`MEM_BLOCKS_PER_VECTOR):0] blk_count, next_blk_count;             // 0..BLOCKS_PER_VEC
     logic [$clog2(`MEM_BLOCKS_PER_VECTOR)-1:0] blk_to_fetch, next_blk_to_fetch;     // 0..BLOCKS_PER_VEC-1
     logic [$clog2(VECTOR_BYTES)-1:0] write_index, next_write_index;
-    logic                                    have_full_vec; // flag: internal buffer contains a complete vector
+    logic have_full_vec; // flag: internal buffer contains a complete vector
     logic buffer_empty;
+    logic next_last_blk_handled_for_current_phase, last_blk_handled_for_current_phase;
 
     assign have_full_vec = (blk_count == `MEM_BLOCKS_PER_VECTOR);
     assign buffer_empty = (blk_count == 0);
@@ -82,74 +83,43 @@ module memory_controller #(
     // -----------------------------
     // Memory Helper Signals
     // -----------------------------
+    ADDR mem_base_addr;
     MEM_TAG expected_tag_fifo [`NUM_MEM_TAGS+1];
     MEM_TAG next_expected_tag_fifo [`NUM_MEM_TAGS+1];
     logic [$clog2(`NUM_MEM_TAGS+1)-1:0] tag_head, next_tag_head, tag_tail, next_tag_tail;
-    logic tags_empty; //should never be full
+    logic tags_empty; //should never be full since we have an extra slot
 
     assign tags_empty = (tag_head == tag_tail);
 
 
-    // -----------------------------
-    // Memory signal computation
-    // -----------------------------    
-
-    // memory address computation
-    ADDR mem_base_addr;
     always_comb begin
-        // base addresses per phase
-        unique case (phase)
-            PH_LOAD_K:  mem_base_addr  = K_BASE + vec_to_fetch*VECTOR_BYTES;
-            PH_LOAD_V:  mem_base_addr  = V_BASE + vec_to_fetch*VECTOR_BYTES;
-            PH_LOAD_Q:  mem_base_addr  = Q_BASE + vec_to_fetch*VECTOR_BYTES;
-            PH_DRAIN_O: mem_base_addr  = O_BASE + vec_to_fetch*VECTOR_BYTES;
-            default:    mem_base_addr  = '0;
-        endcase
-
-        // full addresses per vector/block
-        proc2mem_addr = mem_base_addr + blk_to_fetch*`MEM_BLOCK_SIZE_BYTES;
-    end
-
-    // memory data computation
-    always_comb begin
-        unique case (phase)
-            PH_DRAIN_O: begin
-                //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
-                for(int i = 0; i < 8; i++) begin
-                    proc2mem_data.byte_level[i] = vector_buffer[write_index+i];
-                end
-            end
-            default: proc2mem_data = '0;
-        endcase
-    end
-
-    // Memory command computation + Phase and Internal state transitions
-    logic last_blk_fetched_for_load_phase, last_blk_fetched_for_load_phase_n;
-    always_comb begin
+        mem_base_addr = '0;
+        proc2mem_addr = '0;
+        proc2mem_data = '0;
+        proc2mem_command = MEM_NONE;
         next_phase = phase;
         next_vector_buffer = vector_buffer;
         next_vec_index = vec_index;
         next_blk_count = blk_count;
         next_write_index = write_index;
         next_tag_head = tag_head;
-
-        //This wack signal is used to tell the mem controller to stop prefetching even though we have
-        //not yet exited the load phase
-        last_blk_fetched_for_load_phase_n = last_blk_fetched_for_load_phase;
-
+        next_last_blk_handled_for_current_phase = last_blk_handled_for_current_phase;
         next_blk_to_fetch = blk_to_fetch;
         next_vec_to_fetch = vec_to_fetch;
-
         next_expected_tag_fifo = expected_tag_fifo;
         next_tag_tail = tag_tail;
 
-        //Memory command computation
         unique case (phase)
-            //THIS SCHEME SHOULD ASSUME WE CAN CONTINUOUSLY PREFETCH WITHOUT RISK OF STALLS
-            PH_LOAD_K, PH_LOAD_V, PH_LOAD_Q: begin
-                if(last_blk_fetched_for_load_phase) begin
-                    proc2mem_command = MEM_NONE;
-                end else begin
+            PH_RESET: begin
+                next_phase = PH_LOAD_K;
+            end
+            PH_LOAD_K: begin
+                // Memory address computation
+                mem_base_addr  = K_BASE + vec_to_fetch*VECTOR_BYTES;
+                proc2mem_addr = mem_base_addr + blk_to_fetch*`MEM_BLOCK_SIZE_BYTES;
+
+                // Memory command computation and tag/blk/vec updates
+                if(!last_blk_handled_for_current_phase) begin
                     proc2mem_command = MEM_LOAD;
                     next_expected_tag_fifo[tag_tail] = mem2proc_transaction_tag;
                     next_tag_tail = tag_tail + 1;
@@ -157,63 +127,101 @@ module memory_controller #(
                     if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
                         next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
                         if(vec_to_fetch == `MAX_SEQ_LENGTH - 1) begin
-                            last_blk_fetched_for_load_phase_n = 1;
+                            next_last_blk_handled_for_current_phase = 1;
                         end
                     end
                 end
-            end
-            PH_DRAIN_O: begin
-                if(buffer_empty) begin
-                    proc2mem_command = MEM_NONE;
-                    next_blk_to_fetch = '0;
-                end else begin
-                    proc2mem_command = MEM_STORE;
-                    if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
-                        next_blk_to_fetch = '0;
-                        next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
-                    end else begin
-                        next_blk_to_fetch = blk_to_fetch + 1;
-                    end
-                end
-            end
-            default: proc2mem_command = MEM_NONE;
-        endcase
 
-        //First step is interfacing with sram, whether writing out to QKV or latching in from Osram
-        //Phase transition logic is also handled in this first block
-        unique case (phase)
-            PH_RESET: begin
-                next_phase = PH_LOAD_K;
-                last_blk_fetched_for_load_phase_n = 0;
-            end
-
-            PH_LOAD_K: begin
-                //reset internal buffer on handshake and advance to next phase after all K vectors produced to SRAM
+                // Reset internal buffer on handshake and advance to next phase after all K vectors produced to SRAM
                 if(have_full_vec && K_sram_rdy) begin
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
                     if(vec_index == `MAX_SEQ_LENGTH-1) begin
                         next_phase = PH_LOAD_V;
-                        last_blk_fetched_for_load_phase_n = 0;
+                        next_last_blk_handled_for_current_phase = 0;
                     end
                 end
-            end
 
+                // Receiving a mem blk
+                if(!tags_empty && (mem2proc_data_tag == expected_tag_fifo[tag_head])) begin
+                    //ASSERT NEXT BLK COUNT < MEM_BLOCKS_PER_VECTOR
+
+                    //insert mem2proc_data into vector buffer
+                    //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
+                    for(int i = 0; i < 8; i++) begin
+                        next_vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
+                    end
+                    next_write_index = write_index + 8; //Auto wraps
+                    next_blk_count = next_blk_count + 1; //if currently full, this should be 1
+
+                    next_tag_head = tag_head + 1;
+                end
+            end
             PH_LOAD_V: begin
-                //reset internal buffer on handshake and advance to next phase after all V vectors produced to SRAM
+                // Memory address computation
+                mem_base_addr  = V_BASE + vec_to_fetch*VECTOR_BYTES;
+                proc2mem_addr = mem_base_addr + blk_to_fetch*`MEM_BLOCK_SIZE_BYTES;
+
+                // Memory command computation and tag/blk updates
+                if(!last_blk_handled_for_current_phase) begin
+                    proc2mem_command = MEM_LOAD;
+                    next_expected_tag_fifo[tag_tail] = mem2proc_transaction_tag;
+                    next_tag_tail = tag_tail + 1;
+                    next_blk_to_fetch = blk_to_fetch + 1; //Auto wraps back to zero on every full vector loaded
+                    if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
+                        next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
+                        if(vec_to_fetch == `MAX_SEQ_LENGTH - 1) begin
+                            next_last_blk_handled_for_current_phase = 1;
+                        end
+                    end
+                end
+
+                // Reset internal buffer on handshake and advance to next phase after all V vectors produced to SRAM
                 if(have_full_vec && V_sram_rdy) begin
                     next_blk_count = 0;
                     next_vector_buffer = '0;
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
                     if(vec_index == `MAX_SEQ_LENGTH-1) begin
                         next_phase = PH_LOAD_Q;
-                        last_blk_fetched_for_load_phase_n = 0;
+                        next_last_blk_handled_for_current_phase = 0;
                     end
                 end
-            end
 
+                // Receiving a mem blk
+                if(!tags_empty && (mem2proc_data_tag == expected_tag_fifo[tag_head])) begin
+                    //ASSERT NEXT BLK COUNT < MEM_BLOCKS_PER_VECTOR
+
+                    //insert mem2proc_data into vector buffer
+                    //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
+                    for(int i = 0; i < 8; i++) begin
+                        next_vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
+                    end
+                    next_write_index = write_index + 8; //Auto wraps
+                    next_blk_count = next_blk_count + 1; //if currently full, this should be 1
+
+                    next_tag_head = tag_head + 1;
+                end
+            end
             PH_LOAD_Q: begin
+                // Memory address computation
+                mem_base_addr  = Q_BASE + vec_to_fetch*VECTOR_BYTES;
+                proc2mem_addr = mem_base_addr + blk_to_fetch*`MEM_BLOCK_SIZE_BYTES;
+
+                // Memory command computation and tag/blk/vec updates
+                if(!last_blk_handled_for_current_phase) begin
+                    proc2mem_command = MEM_LOAD;
+                    next_expected_tag_fifo[tag_tail] = mem2proc_transaction_tag;
+                    next_tag_tail = tag_tail + 1;
+                    next_blk_to_fetch = blk_to_fetch + 1; //Auto wraps back to zero on every full vector loaded
+                    if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
+                        next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
+                        if(vec_to_fetch == `MAX_SEQ_LENGTH - 1) begin
+                            next_last_blk_handled_for_current_phase = 1;
+                        end
+                    end
+                end
+
                 //reset internal buffer on handshake and advance to next phase after all Q vectors produced to SRAM
                 if(have_full_vec && Q_sram_rdy) begin
                     next_blk_count = 0;
@@ -221,37 +229,10 @@ module memory_controller #(
                     next_vec_index = vec_index + 1; //Auto wraps on phase transition
                     if(vec_index == `MAX_SEQ_LENGTH-1) begin
                         next_phase = PH_DRAIN_O;
-                        last_blk_fetched_for_load_phase_n = 0;
+                        next_last_blk_handled_for_current_phase = 0;
                     end
                 end
-            end
 
-            PH_DRAIN_O: begin
-                //ASSERT TAGS EMPTY
-
-                //fill internal buffer with drained vector on handshake
-                if(buffer_empty && O_sram_vld) begin
-                    next_write_index = 0; //Should be unnecessary
-                    next_blk_count = `MEM_BLOCKS_PER_VECTOR;
-                    next_vector_buffer = drained_vector;
-                end
-
-                // Advance to next phase after all O vectors written back to memory
-                if ((vec_index == `MAX_SEQ_LENGTH-1) && (blk_count == 1)) begin
-                    //When blk count is 1 we guarantee the buffer will drain at the end of that cycle
-                    next_phase = PH_DONE;
-                end
-            end
-
-            PH_DONE: next_phase = PH_DONE; //Probably unnecessary or incorrect for multiple runs
-
-            default: next_phase = PH_RESET;
-        endcase
-    
-        // Next step is interfacing with memory, whether receiving loaded mem block or writing drained mem block
-        // Internal state transitions are handled here as well
-        unique case (phase)
-            PH_LOAD_K, PH_LOAD_V, PH_LOAD_Q: begin
                 //receiving a mem blk
                 if(!tags_empty && (mem2proc_data_tag == expected_tag_fifo[tag_head])) begin
                     //ASSERT NEXT BLK COUNT < MEM_BLOCKS_PER_VECTOR
@@ -268,16 +249,48 @@ module memory_controller #(
                 end
             end
             PH_DRAIN_O: begin
-                //write to mem already handled, update vec/blk/write index
-                if(!buffer_empty) begin //We guarantee a wb whenever the buffer is non empty
+                // Memory address computation
+                mem_base_addr  = O_BASE + vec_to_fetch*VECTOR_BYTES;
+                proc2mem_addr = mem_base_addr + blk_to_fetch*`MEM_BLOCK_SIZE_BYTES;
+            
+                // Memory write data computation
+                for(int i = 0; i < 8; i++) begin
+                    proc2mem_data.byte_level[i] = vector_buffer[write_index+i];
+                end
+
+                // Memory command computation and blk/vec updates
+                if(buffer_empty) begin
+                    next_blk_to_fetch = '0;
+                end else begin
+                    proc2mem_command = MEM_STORE;
+                    if(blk_to_fetch == `MEM_BLOCKS_PER_VECTOR - 1) begin
+                        next_blk_to_fetch = '0;
+                        next_vec_to_fetch = vec_to_fetch + 1; //auto wraps
+                    end else begin
+                        next_blk_to_fetch = blk_to_fetch + 1;
+                    end
                     next_write_index = write_index + 8; //Auto wraps
                     next_blk_count = blk_count - 1; //Auto wraps back to 512
                     if(blk_count == 1) begin
                         next_vec_index = vec_index + 1;
                     end
                 end
+
+                //fill internal buffer with drained vector on handshake
+                if(buffer_empty && O_sram_vld) begin
+                    next_write_index = 0; //Should be unnecessary
+                    next_blk_count = `MEM_BLOCKS_PER_VECTOR;
+                    next_vector_buffer = drained_vector;
+                end
+
+                // Advance to next phase after all O vectors written back to memory
+                if ((vec_index == `MAX_SEQ_LENGTH-1) && (blk_count == 1)) begin
+                    //When blk count is 1 we guarantee the buffer will drain at the end of that cycle
+                    next_phase = PH_DONE;
+                end
             end
-            default: ;//do nothing
+            PH_DONE: ; //do nothing
+            default: ; //do nothing
         endcase
     end
 
@@ -291,13 +304,15 @@ module memory_controller #(
             blk_to_fetch      <= '0;
             vec_to_fetch      <= '0;
             write_index       <= '0;
-            //expected_tag_fifo <= '0;
+            
+            //latch tag fifo one by one since it doesnt like packed dims
             for (int i = 0; i < `NUM_MEM_TAGS+1; i++) begin
                 expected_tag_fifo[i] <= '0;
             end
+
             tag_head          <= '0;
             tag_tail          <= '0;
-            last_blk_fetched_for_load_phase <= '0;
+            last_blk_handled_for_current_phase <= '0;
         end else begin
             phase             <= next_phase;
             vector_buffer     <= next_vector_buffer;
@@ -306,13 +321,15 @@ module memory_controller #(
             blk_to_fetch      <= next_blk_to_fetch;
             vec_to_fetch      <= next_vec_to_fetch;
             write_index       <= next_write_index;
-            //expected_tag_fifo <= next_expected_tag_fifo;
+
+            //latch tag fifo one by one since it doesnt like packed dims
             for (int i = 0; i < `NUM_MEM_TAGS+1; i++) begin
                 expected_tag_fifo[i] <= next_expected_tag_fifo[i];
             end
+
             tag_head          <= next_tag_head;
             tag_tail          <= next_tag_tail;
-            last_blk_fetched_for_load_phase <= last_blk_fetched_for_load_phase_n;
+            last_blk_handled_for_current_phase <= next_last_blk_handled_for_current_phase;
         end
         `ifdef MEM_CTRL_DEBUG
             $display("PHASE: %s", phase.name());
@@ -325,8 +342,7 @@ module memory_controller #(
             $display("VSRAM_RDY = %0d", V_sram_rdy);
             $display("QSRAM_RDY = %0d", Q_sram_rdy);
             $display("OSRAM_VLD = %0d", O_sram_vld);
-            $display("LAST_BLK_FLAG = %0d", last_blk_fetched_for_load_phase);
-            //$display("MEM_CTRL_VEC_BUF = %p", vector_buffer);
+            $display("LAST_BLK_FLAG = %0d", last_blk_handled_for_current_phase);
             $write("MEM_CTRL_VEC_BUF: ");
             foreach (vector_buffer[i]) begin
                 $write("%02x ", vector_buffer[i]); //or %0d for decimal val
@@ -334,6 +350,5 @@ module memory_controller #(
             $write("\n");
         `endif
     end
-
 
 endmodule

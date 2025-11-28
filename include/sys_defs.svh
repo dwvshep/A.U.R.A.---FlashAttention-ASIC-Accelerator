@@ -29,21 +29,25 @@
 
 `define MEM_BLOCK_SIZE_BYTES (`MEM_BLOCK_SIZE_BITS / 8) // Size of memory block in bytes
 
-`define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `MEM_BLOCK_SIZE_BYTES) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
+`define QBYTES_FETCHED_PER_CYCLE (`MEM_BLOCK_SIZE_BYTES/2) //assume bandwidth is shared with output vector stores
 
-`define NUM_PES 512        // Number of parallel processing elements
+`define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `QBYTES_FETCHED_PER_CYCLE) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
 
-`define SRAM_SIZE_KB  128         // Size of SRAM in KB
+`define NUM_PES `MAX_NUM_PES        // Number of parallel processing elements
 
-`define K_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one K row vector in SRAM
+`define NUM_TILES (`MAX_SEQ_LENGTH/`NUM_PES)
 
-`define V_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one V row vector in SRAM
+// `define SRAM_SIZE_KB  128         // Size of SRAM in KB
 
-`define Q_SRAM_BYTES (`SRAM_SIZE_KB * 1024 - `K_SRAM_BYTES - `V_SRAM_BYTES) // Bytes available to store Q vectors in SRAM
+// `define K_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one K row vector in SRAM
 
-`define Q_SRAM_ROW_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one Q row vector in SRAM
+// `define V_SRAM_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one V row vector in SRAM
 
-`define Q_SRAM_DEPTH (`Q_SRAM_BYTES/`Q_SRAM_ROW_BYTES) // Number of full length Q row vectors that can be stored in SRAM
+// `define Q_SRAM_BYTES (`SRAM_SIZE_KB * 1024 - `K_SRAM_BYTES - `V_SRAM_BYTES) // Bytes available to store Q vectors in SRAM
+
+// `define Q_SRAM_ROW_BYTES (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8) // Bytes needed to store one Q row vector in SRAM
+
+// `define Q_SRAM_DEPTH (`Q_SRAM_BYTES/`Q_SRAM_ROW_BYTES) // Number of full length Q row vectors that can be stored in SRAM
 
 `define REDUCTIONS_PER_STAGE 2
 
@@ -263,7 +267,7 @@ typedef enum logic [1:0] {
 // `define KSRAM_DEBUG
 // `define VSRAM_DEBUG
 // `define QSRAM_DEBUG
-`define OSRAM_DEBUG
+// `define OSRAM_DEBUG
 `define INT_DIV_DEBUG
 `define VEC_DEBUG
 `define DOT_PRODUCT_DEBUG

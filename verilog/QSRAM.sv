@@ -105,11 +105,22 @@ module QSRAM #(
                 read_bank <= ~read_bank;
                 if (read_bank == 0) begin
                     bank0_full <= 1'b0;
+                    for (int i = 0; i < NUM_ROWS; i++) begin
+                        bank0[i] <= '0;
+                    end
                 end else begin
                     bank1_full <= 1'b0;
+                    for (int i = 0; i < NUM_ROWS; i++) begin
+                        bank1[i] <= '0;
+                    end
                 end
+                
             end
             `ifdef QSRAM_DEBUG
+                $display("FILL_BANK: %0b", fill_bank);
+                $display("READ_BANK: %0b", read_bank);
+                $display("B0_FULL: %0b", bank0_full);
+                $display("B1_FULL: %0b", bank1_full);
                 $write("QSRAM Dual-Banked: [BANK0] : [BANK1]\n");
                 for(int i = 0; i < 3; i++) begin
                     $write("Row[%0d]: ", i);

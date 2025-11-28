@@ -11,7 +11,7 @@ module PE(
     output Q_rdy_out,    //Backend Q ready
     output K_rdy_out,    //Backend K ready
     output V_rdy_out,    //Backend V ready
-    input  O_sram_rdy, //OSRAM ready to receive output
+    input  O_sram_rdy,   //OSRAM ready to receive output
     output output_valid, //Output valid
 
     //Data Signals

@@ -301,6 +301,7 @@ module testbench;
                     $write("%f ", AURA_dut.gen_pe[1].pe_inst.expmul_inst.expmul_v_inst.v_out[i] / real'(1 << `EXPMUL_VEC_F)); //or %0d for decimal val
                 end
                 $write("\n");
+                $display("KV_CNTR: %0d", AURA_dut.gen_pe[1].pe_inst.expmul_inst.kv_counter_1);
             `endif
             `ifdef VEC_DEBUG
                 $write("[VEC_DIV_DBG] vec_in: ");

@@ -199,6 +199,4 @@ module dot_product (
 
     assign v_out = v_pipe[`NUM_REDUCE_STAGES-1];
 
-    //assign v_out = v;
-
 endmodule

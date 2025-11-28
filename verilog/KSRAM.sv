@@ -26,8 +26,12 @@ module KSRAM #(
     // Full/empty flags
     logic full, empty;
 
-    assign full = (head ^ tail) == (NUM_ENTRIES);
-    assign empty = (head == tail);
+    //assign full = (head ^ tail) == (NUM_ENTRIES);
+    //assign empty = (head == tail);
+
+    //New logic to allow all vectors to be read for multiple iterations
+    assign full = (tail == NUM_ENTRIES);
+    assign empty = (tail == 0);
 
     // Output data valid when the fifo has at least one valid entry
     assign read_data_valid = !empty;
@@ -36,7 +40,7 @@ module KSRAM #(
     assign sram_ready = !full;
 
     // Output read data from the head of the fifo in the same cycle
-    assign read_data = fifo[head];
+    assign read_data = fifo[head[$clog2(NUM_ENTRIES)-1:0]];
 
     always_ff @(posedge clk) begin
         if (rst) begin
