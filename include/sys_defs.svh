@@ -33,7 +33,7 @@
 
 `define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `QBYTES_FETCHED_PER_CYCLE) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
 
-`define NUM_PES `MAX_NUM_PES        // Number of parallel processing elements
+`define NUM_PES 4        // Number of parallel processing elements
 
 `define NUM_TILES (`MAX_SEQ_LENGTH/`NUM_PES)
 
@@ -194,17 +194,17 @@ typedef `Q_TYPE(`INTERMEDIATE_PRODUCT_I, `INTERMEDIATE_PRODUCT_F) INTERMEDIATE_P
 // ---- I/O Type Definitions ---- //
 ////////////////////////////////////
 
-typedef INPUT_VEC_QT [`MAX_EMBEDDING_DIM] Q_VECTOR_T;
+typedef INPUT_VEC_QT [0:`MAX_EMBEDDING_DIM-1] Q_VECTOR_T;
 
-typedef INPUT_VEC_QT [`MAX_EMBEDDING_DIM] K_VECTOR_T;
+typedef INPUT_VEC_QT [0:`MAX_EMBEDDING_DIM-1] K_VECTOR_T;
 
-typedef INPUT_VEC_QT [`MAX_EMBEDDING_DIM] V_VECTOR_T;
+typedef INPUT_VEC_QT [0:`MAX_EMBEDDING_DIM-1] V_VECTOR_T;
 
-typedef OUTPUT_VEC_QT [`MAX_EMBEDDING_DIM] O_VECTOR_T;
+typedef OUTPUT_VEC_QT [0:`MAX_EMBEDDING_DIM-1] O_VECTOR_T;
 
-typedef EXPMUL_VEC_QT [`MAX_EMBEDDING_DIM+1] STAR_VECTOR_T;
+typedef EXPMUL_VEC_QT [0:`MAX_EMBEDDING_DIM] STAR_VECTOR_T;
 
-typedef EXPMUL_SHIFT_STAGE_QT [`MAX_EMBEDDING_DIM+1] EXPMUL_SHIFT_VECTOR_T;
+typedef EXPMUL_SHIFT_STAGE_QT [0:`MAX_EMBEDDING_DIM] EXPMUL_SHIFT_VECTOR_T;
 
 
 
@@ -263,16 +263,16 @@ typedef enum logic [1:0] {
 ///////////////////////////
 
 //Comment out when synthesizing
-`define AURA_DEBUG 
+// `define AURA_DEBUG 
 // `define KSRAM_DEBUG
 // `define VSRAM_DEBUG
 // `define QSRAM_DEBUG
 // `define OSRAM_DEBUG
-`define INT_DIV_DEBUG
-`define VEC_DEBUG
-`define DOT_PRODUCT_DEBUG
-`define EXPMUL_DEBUG
-`define MAX_DEBUG
-`define MEM_CTRL_DEBUG
+// `define INT_DIV_DEBUG
+// `define VEC_DEBUG
+// `define DOT_PRODUCT_DEBUG
+// `define EXPMUL_DEBUG
+// `define MAX_DEBUG
+// `define MEM_CTRL_DEBUG
 
 `endif

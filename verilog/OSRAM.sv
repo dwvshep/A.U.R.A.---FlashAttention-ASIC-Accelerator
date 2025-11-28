@@ -32,13 +32,13 @@ module OSRAM #(
     output                             sram_ready,        //Asserted when the fill bank can accept a new row
 
     // Data signals from memory controller to backend
-    input  O_VECTOR_T                  write_data [NUM_ROWS],
+    input  O_VECTOR_T                  write_data [0:NUM_ROWS-1],
     output O_VECTOR_T                  drain_data
 );
 
     // Bank 0 and Bank 1: each has NUM_ROWS entries of O Vectors.
-    O_VECTOR_T bank0 [NUM_ROWS];
-    O_VECTOR_T bank1 [NUM_ROWS];
+    O_VECTOR_T bank0 [0:NUM_ROWS-1];
+    O_VECTOR_T bank1 [0:NUM_ROWS-1];
 
     // Which bank is currently being filled (0 or 1)?
     logic write_bank;

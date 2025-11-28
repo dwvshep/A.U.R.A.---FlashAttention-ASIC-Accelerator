@@ -102,8 +102,8 @@ module memory_controller #(
     // Memory Helper Signals
     // -----------------------------
     ADDR mem_base_addr;
-    MEM_TAG expected_tag_fifo [`NUM_MEM_TAGS+1];
-    MEM_TAG next_expected_tag_fifo [`NUM_MEM_TAGS+1];
+    MEM_TAG expected_tag_fifo [0:`NUM_MEM_TAGS];
+    MEM_TAG next_expected_tag_fifo [0:`NUM_MEM_TAGS];
     logic [$clog2(`NUM_MEM_TAGS+1)-1:0] tag_head, next_tag_head, tag_tail, next_tag_tail;
     logic tags_empty; //should never be full since we have an extra slot
 

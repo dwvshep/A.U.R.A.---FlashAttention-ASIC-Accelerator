@@ -1,6 +1,8 @@
 //This is the top-level module for the AURA accelerator
 //This is where memory interfaces should be instantiated and connected to the processing elements
 
+`include "include/sys_defs.svh"
+
 module AURA(
     input clk, // System clock
     input rst, // System reset
@@ -39,17 +41,17 @@ module AURA(
     logic Q_vld;
     logic K_vld;
     logic V_vld;
-    logic Q_rdy [`NUM_PES];
-    logic K_rdy [`NUM_PES];
-    logic V_rdy [`NUM_PES];
-    logic O_vld [`NUM_PES];
+    logic Q_rdy [0:`NUM_PES-1];
+    logic K_rdy [0:`NUM_PES-1];
+    logic V_rdy [0:`NUM_PES-1];
+    logic O_vld [0:`NUM_PES-1];
     logic O_sram_rdy;
     
     //Internal Data Signals
-    Q_VECTOR_T q_vectors [`NUM_PES];
+    Q_VECTOR_T q_vectors [0:`NUM_PES-1];
     K_VECTOR_T k_vector;
     V_VECTOR_T v_vector;
-    O_VECTOR_T output_vectors_scaled [`NUM_PES];
+    O_VECTOR_T output_vectors_scaled [0:`NUM_PES-1];
 
     //Instantiate memory controller
     memory_controller mem_ctrl_inst (

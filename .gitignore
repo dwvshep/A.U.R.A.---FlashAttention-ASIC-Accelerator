@@ -23,17 +23,18 @@ csrc/
 build/*
 
 # synthesis files
-# *.vg
-# *.rep
-# *.ddc
-# *.chk
-# *.log
-# *.syn
-# *.db
-# *.svf
-# *.mr
-# *.pvl
-# *_svsim.sv
+*.vg
+*.rep
+*.ddc
+*.chk
+*.cksum
+*.log
+*.syn
+*.db
+*.svf
+*.mr
+*.pvl
+*_svsim.sv
 
 # verdi
 verdi*

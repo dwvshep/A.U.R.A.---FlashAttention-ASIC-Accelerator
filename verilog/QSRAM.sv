@@ -33,12 +33,12 @@ module QSRAM #(
 
     // Data signals from memory controller to backend
     input  Q_VECTOR_T                  write_data,
-    output Q_VECTOR_T                  read_data [NUM_ROWS]
+    output Q_VECTOR_T                  read_data [0:NUM_ROWS-1]
 );
 
     // Bank 0 and Bank 1: each has NUM_ROWS entries of Q Vectors.
-    Q_VECTOR_T bank0 [NUM_ROWS];
-    Q_VECTOR_T bank1 [NUM_ROWS];
+    Q_VECTOR_T bank0 [0:NUM_ROWS-1];
+    Q_VECTOR_T bank1 [0:NUM_ROWS-1];
 
     // Which bank is currently being filled (0 or 1)?
     logic fill_bank;

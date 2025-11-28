@@ -22,7 +22,7 @@ module tree_reduce #(
     output rdy_out,
 
     //Data signals
-    input  logic signed  [W_IN-1:0] list_in [LEN],
+    input  logic signed  [W_IN-1:0] list_in [0:LEN-1],
     output logic signed [W_OUT-1:0] sum
 );
 
@@ -45,8 +45,8 @@ module tree_reduce #(
             localparam int IN_WIDTH = W_IN + (s*REDUCTIONS_PER_STAGE);
             localparam int OUT_WIDTH = W_IN + ((s+1)*REDUCTIONS_PER_STAGE);
             
-            logic signed [IN_WIDTH-1:0]  stage_list_in  [IN_LEN];
-            logic signed [OUT_WIDTH-1:0] stage_list_out [OUT_LEN];
+            logic signed [IN_WIDTH-1:0]  stage_list_in  [0:IN_LEN-1];
+            logic signed [OUT_WIDTH-1:0] stage_list_out [0:OUT_LEN-1];
 
             //Assign list_in to first stage's input, else last stage's output
             if (s == 0) begin : FIRST

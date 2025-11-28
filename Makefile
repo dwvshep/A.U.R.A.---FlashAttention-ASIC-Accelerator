@@ -21,6 +21,8 @@ TCL_SCRIPT = synth/AURAsynth.tcl
 # (useful for, i.e. piping to `tee`)
 SHELL := $(SHELL) -o pipefail
 
+GREP = grep -E --color=auto
+
 ################################
 # ---- Module Testbenches ---- #
 ################################
@@ -106,7 +108,7 @@ AURA_SOURCES = verilog/AURA.sv \
 			   verilog/int_division.sv \
 			   verilog/KSRAM.sv \
 			   verilog/max.sv \
-			   verilog/memctrlV3.sv \
+			   verilog/memory_controller.sv \
 			   verilog/OSRAM.sv \
 		       verilog/PE.sv \
 			   verilog/q_sign_extend.sv \

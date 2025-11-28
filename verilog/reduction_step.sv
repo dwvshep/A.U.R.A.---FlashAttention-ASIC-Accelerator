@@ -20,12 +20,12 @@ module reduction_step #(
     output rdy_out,
 
     //Data signals
-    input  logic signed  [W_IN-1:0] list_in  [INPUT_LEN],
-    output logic signed [W_OUT-1:0] list_out [OUTPUT_LEN]
+    input  logic signed  [W_IN-1:0] list_in  [0:INPUT_LEN-1],
+    output logic signed [W_OUT-1:0] list_out [0:OUTPUT_LEN-1]
 );
 
     //Internal Pipeline Registers
-    logic signed [W_IN-1:0] list [INPUT_LEN];
+    logic signed [W_IN-1:0] list [0:INPUT_LEN-1];
     logic valid_reg;
 
     assign vld_out = valid_reg;
@@ -61,8 +61,8 @@ module reduction_step #(
     end
 
     //outputs are combinational
-    logic signed [W_OUT-1:0] temp   [INPUT_LEN];
-    logic signed [W_OUT-1:0] stageN [INPUT_LEN];
+    logic signed [W_OUT-1:0] temp   [0:INPUT_LEN-1];
+    logic signed [W_OUT-1:0] stageN [0:INPUT_LEN-1];
     int out_len;
     always_comb begin
         //sign extend inputs first

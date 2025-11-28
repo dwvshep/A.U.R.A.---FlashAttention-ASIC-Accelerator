@@ -18,7 +18,7 @@ module KSRAM #(
 );
 
     // Internal fifo of K vectors
-    K_VECTOR_T fifo [NUM_ENTRIES];
+    K_VECTOR_T fifo [0:NUM_ENTRIES-1];
 
     // Write index into the current fill bank: 0 .. NUM_ROWS-1
     logic [$clog2(NUM_ENTRIES):0] head, tail;

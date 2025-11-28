@@ -46,8 +46,8 @@ module dot_product (
     assign V_rdy_out = !valid_v || (all_valid && reduction_rdy);
 
     //Internal Data signals
-    PRODUCT_QT products [`MAX_EMBEDDING_DIM];
-    INTERMEDIATE_PRODUCT_QT intermediate_products [`MAX_EMBEDDING_DIM];
+    PRODUCT_QT products [0:`MAX_EMBEDDING_DIM-1];
+    INTERMEDIATE_PRODUCT_QT intermediate_products [0:`MAX_EMBEDDING_DIM-1];
     DOT_QT sum;
     DOT_QT shifted_sum;
 
@@ -171,8 +171,8 @@ module dot_product (
     );
 
     // Pipeline delay matching tree latency
-    V_VECTOR_T v_pipe [`NUM_REDUCE_STAGES];
-    logic      v_valid_pipe [`NUM_REDUCE_STAGES];
+    V_VECTOR_T v_pipe [0:`NUM_REDUCE_STAGES-1];
+    logic      v_valid_pipe [0:`NUM_REDUCE_STAGES-1];
 
     always_ff @(posedge clk) begin
         if (rst) begin
