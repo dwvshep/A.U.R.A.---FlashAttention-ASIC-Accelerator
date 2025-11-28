@@ -12,8 +12,8 @@ module memory_controller #(
     parameter int  TILE_SIZE       = `NUM_PES, // # of vectors per tile
     parameter int  TILE_BYTES      = TILE_SIZE * VECTOR_BYTES
 )(
-    input clk,
-    input rst,
+    input clock,
+    input reset,
 
     // Memory interface signals
     input  MEM_TAG     mem2proc_transaction_tag, // Memory tag for current transaction
@@ -367,8 +367,8 @@ module memory_controller #(
     end
 
     //latch all sequential elements
-    always_ff @(posedge clk) begin
-        if(rst) begin
+    always_ff @(posedge clock) begin
+        if(reset) begin
             phase             <= '0;
             vector_buffer     <= '0;
             vec_index         <= '0;

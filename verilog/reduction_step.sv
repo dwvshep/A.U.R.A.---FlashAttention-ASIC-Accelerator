@@ -10,8 +10,8 @@ module reduction_step #(
     parameter int OUTPUT_LEN     = INPUT_LEN >> STEPS
 )(
     //control signals
-    input  clk,
-    input  rst,
+    input  clock,
+    input  reset,
 
     //Handshake signals
     input  vld_in,
@@ -32,9 +32,9 @@ module reduction_step #(
     assign rdy_out = rdy_in || !valid_reg;
 
     //Latch inputs first
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clock) begin
         //$display("[REDUCTION STEP LATCH]");
-        if(rst) begin
+        if(reset) begin
             //list <= '0;
             for (int i = 0; i < INPUT_LEN; i++) begin
                 list[i] <= '0;

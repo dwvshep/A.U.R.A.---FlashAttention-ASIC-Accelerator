@@ -22,8 +22,8 @@ Stage 2:
 
 module expmul_stage (
     //control signals
-    input clk,
-    input rst,
+    input clock,
+    input reset,
 
     //Handshake signals
     input vld_in,
@@ -58,7 +58,6 @@ module expmul_stage (
     EXPMUL_SHIFT_VECTOR_T shift_stage_3_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_4_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_5_result; //Q9.23
-    logic [$clog2(`MAX_SEQ_LENGTH)-1:0] kv_counter;
 
     `Q_TYPE(6, 4) log_e_x_test;
     `Q_TYPE(5, 4) x_diff_expanded;
@@ -84,8 +83,8 @@ module expmul_stage (
 
     //Latch inputs first
     //First stage: Diff and then do log2e*X approximation
-    always_ff @(posedge clk) begin
-        if(rst) begin
+    always_ff @(posedge clock) begin
+        if(reset) begin
             a <= '0;
             b <= '0;
             v <= '0;
@@ -142,8 +141,8 @@ module expmul_stage (
             
 
     //Second stage: 2^-L * V
-    always_ff @(posedge clk) begin
-        if (rst) begin
+    always_ff @(posedge clock) begin
+        if (reset) begin
             stage_2_valid <= 1'b0;
             l_hat <= '0;
             v_stage_2 <= '0;

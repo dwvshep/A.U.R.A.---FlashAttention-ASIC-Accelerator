@@ -1,8 +1,8 @@
 //This module implements the backend single processing element (PE) for the AURA architecture.
 
 module PE(
-    input  clk, // System clock
-    input  rst, // System reset
+    input  clock, // System clock
+    input  reset, // System reset
 
     //Handshake Signals
     input  Q_vld_in,     //Upstream valid
@@ -59,8 +59,8 @@ module PE(
 
     //Internal Data Flow Modules
     dot_product dot_product_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         .Q_vld_in(Q_vld_in),
         .K_vld_in(K_vld_in),
         .V_vld_in(V_vld_in),
@@ -77,8 +77,8 @@ module PE(
     );
 
     max max_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         .vld_in(dot_product_valid),
         .rdy_in(expmul_ready),
         .vld_out(max_valid),
@@ -93,8 +93,8 @@ module PE(
     );
 
     expmul expmul_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         .vld_in(max_valid),
         .rdy_in(vector_division_ready),
         .vld_out(expmul_valid),
@@ -108,8 +108,8 @@ module PE(
     );
 
     vector_division vector_division_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         .vld_in(expmul_valid),
         .rdy_in(O_sram_rdy),
         .vld_out(output_valid),

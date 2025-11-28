@@ -2,8 +2,8 @@
 
 module max(
     //control signals
-    input clk,
-    input rst,
+    input clock,
+    input reset,
 
     //Handshake signals
     input vld_in,
@@ -32,8 +32,8 @@ module max(
     assign rdy_out = rdy_in || !valid_reg;
 
     //Latch inputs first
-    always_ff @(posedge clk) begin
-        if(rst) begin
+    always_ff @(posedge clock) begin
+        if(reset) begin
             s <= '0;
             m_prev <= '0;
             v <= '0;

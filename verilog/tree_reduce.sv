@@ -12,8 +12,8 @@ module tree_reduce #(
     parameter int REDUCTIONS_PER_STAGE = (W_OUT-W_IN)/STAGES
 )(
     //control signals
-    input clk,
-    input rst,
+    input clock,
+    input reset,
 
     //Handshake signals
     input vld_in,
@@ -67,8 +67,8 @@ module tree_reduce #(
                     .W_OUT     (OUT_WIDTH),
                     .OUTPUT_LEN(OUT_LEN)
             ) reduce_step_inst (
-                    .clk     (clk),
-                    .rst     (rst),
+                    .clock     (clock),
+                    .reset     (reset),
                     .vld_in  (vld_stage[s]),
                     .rdy_in  (rdy_stage[s+1]),
                     .vld_out (vld_stage[s+1]),

@@ -11,8 +11,8 @@ module tb_expmul;
     // -------------------------------------------------------------
     // Testbench signals
     // -------------------------------------------------------------
-    logic clk;
-    logic rst;
+    logic clock;
+    logic reset;
 
     logic vld_in;
     logic rdy_in;
@@ -32,27 +32,27 @@ module tb_expmul;
     // Clock generation (100 MHz)
     // -------------------------------------------------------------
     initial begin
-        clk = 0;
-        forever #5 clk = ~clk;
+        clock = 0;
+        forever #5 clock = ~clock;
     end
 
     // -------------------------------------------------------------
     // Reset sequence
     // -------------------------------------------------------------
     initial begin
-        rst = 1;
+        reset = 1;
         vld_in = 0;
         rdy_in = 1;   // downstream initially ready
         #(20);
-        rst = 0;
+        reset = 0;
     end
 
     // -------------------------------------------------------------
     // Instantiate DUT
     // -------------------------------------------------------------
     expmul dut (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
 
         .vld_in(vld_in),
         .rdy_in(rdy_in),
@@ -157,8 +157,8 @@ module tb_expmul;
     );
         begin
             // Wait until DUT ready to accept input
-            @(posedge clk);
-            while (!rdy_out) @(posedge clk);
+            @(posedge clock);
+            while (!rdy_out) @(posedge clock);
 
             m_in       <= m;
             m_prev_in  <= m_prev;
@@ -172,10 +172,10 @@ module tb_expmul;
 
             vld_in <= 1;
 
-            @(posedge clk);
+            @(posedge clock);
 
             // Wait until handshake completes
-            //while (!(vld_in && rdy_out)) @(posedge clk);
+            //while (!(vld_in && rdy_out)) @(posedge clock);
 
             vld_in <= 0;
 
@@ -187,7 +187,7 @@ module tb_expmul;
     // -------------------------------------------------------------
     // Output Monitor
     // -------------------------------------------------------------
-    // always @(posedge clk) begin
+    // always @(posedge clock) begin
     //         $write("[%0t] OUT VALID: exp_o_out[1]=%0d, exp_v_out[1]=%0d",
     //                $time,
     //                exp_o_out[1],
@@ -204,7 +204,7 @@ module tb_expmul;
     // -------------------------------------------------------------
     // Downstream backpressure generator
     // -------------------------------------------------------------
-    always @(posedge clk) begin
+    always @(posedge clock) begin
         if (!rst)
             // rdy_in <= $urandom_range(0, 1);  // random 0/1
             rdy_in <= 1;
@@ -226,7 +226,7 @@ module tb_expmul;
         $dumpfile("../expmul.vcd");
         $dumpvars(0, tb_expmul.dut);
         wait(!rst);
-        @(posedge clk);
+        @(posedge clock);
 
         // ---------------------------------------------------------
         // Directed tests

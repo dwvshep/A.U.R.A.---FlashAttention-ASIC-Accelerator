@@ -3,8 +3,8 @@
 module VSRAM #(
     parameter integer NUM_ENTRIES  = `MAX_SEQ_LENGTH  // number of rows per bank
 )(
-    input                              clk,
-    input                              rst,
+    input                              clock,
+    input                              reset,
 
     // Handshaking between memory controller and backend
     input                              write_enable,    //Asserted when memory controller is ready to write an entire row
@@ -42,8 +42,8 @@ module VSRAM #(
     // Output read data from the head of the fifo in the same cycle
     assign read_data = fifo[head[$clog2(NUM_ENTRIES)-1:0]];
 
-    always_ff @(posedge clk) begin
-        if (rst) begin
+    always_ff @(posedge clock) begin
+        if (reset) begin
             //fifo  <= '0;
             for (int i = 0; i < NUM_ENTRIES; i++) begin
                 fifo[i] <= '0;

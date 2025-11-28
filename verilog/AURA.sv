@@ -4,8 +4,8 @@
 `include "include/sys_defs.svh"
 
 module AURA(
-    input clk, // System clock
-    input rst, // System reset
+    input clock, // System clock
+    input reset, // System reset
 
     //Memory interface signals copied from 470 template
     input  MEM_TAG     mem2proc_transaction_tag, // Memory tag for current transaction
@@ -55,8 +55,8 @@ module AURA(
 
     //Instantiate memory controller
     memory_controller mem_ctrl_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
 
         .mem2proc_transaction_tag(mem2proc_transaction_tag),
         .mem2proc_data(mem2proc_data),
@@ -82,8 +82,8 @@ module AURA(
     
     //Instantiate SRAMs for Q tiles, K vectors, V vectors, and Output tiles
     QSRAM QSRAM_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         
         .write_enable(ctrl_Q_vld),    //Asserted when memory controller is ready to write an entire row
         .read_enable(Q_rdy[0]),     //Asserted when all backend PEs are ready to read (just check the first one)
@@ -95,8 +95,8 @@ module AURA(
     );
 
     KSRAM KSRAM_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         
         .write_enable(ctrl_K_vld),    //Asserted when memory controller is ready to write an entire row
         .read_enable(K_rdy[0]),     //Asserted when all backend PEs are ready to read (can just check the first one)
@@ -108,8 +108,8 @@ module AURA(
     );
 
     VSRAM VSRAM_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         
         .write_enable(ctrl_V_vld),    //Asserted when memory controller is ready to write an entire row
         .read_enable(V_rdy[0]),     //Asserted when all backend PEs are ready to read (can just check the first one)
@@ -121,8 +121,8 @@ module AURA(
     );
 
     OSRAM OSRAM_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         
         .write_enable(O_vld[0]),    //Asserted when PEs are ready to write an entire bank (can just check the first one)
         .drain_enable(ctrl_O_rdy),     //Asserted when all backend PEs are ready to read
@@ -138,8 +138,8 @@ module AURA(
     generate
         for (genvar i = 0; i < `NUM_PES; i++) begin : gen_pe
             PE pe_inst (
-                .clk(clk),
-                .rst(rst),
+                .clock(clock),
+                .reset(reset),
 
                 .Q_vld_in(Q_vld),
                 .K_vld_in(K_vld),
@@ -161,7 +161,7 @@ module AURA(
     endgenerate
 
     // `ifdef AURA_DEBUG
-    //     always_ff @(posedge clk) begin
+    //     always_ff @(posedge clock) begin
     //         $display("[DIV_DBG] valid_in: %0b, valid_reg: %0b, valid_out: %0b, ready_in: %0b, ready_out: %0b", 
     //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.vld_in,
     //             gen_pe[0].pe_inst.vector_division_inst.gen_div[0].div_inst.valid_reg,

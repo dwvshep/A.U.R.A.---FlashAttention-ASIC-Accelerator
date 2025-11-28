@@ -22,8 +22,8 @@
 module QSRAM #(
     parameter integer NUM_ROWS  = `NUM_PES  // number of rows per bank
 )(
-    input                              clk,
-    input                              rst,
+    input                              clock,
+    input                              reset,
 
     // Handshaking between memory controller and backend
     input                              write_enable,    //Asserted when memory controller is ready to write an entire row
@@ -62,8 +62,8 @@ module QSRAM #(
     // Output read data from the active read bank the same cycle
     assign read_data = (read_bank == 0) ? bank0 : bank1;
 
-    always_ff @(posedge clk) begin
-        if (rst) begin
+    always_ff @(posedge clock) begin
+        if (reset) begin
             for (int i = 0; i < NUM_ROWS; i++) begin
                 bank0[i] <= '0;
                 bank1[i] <= '0;

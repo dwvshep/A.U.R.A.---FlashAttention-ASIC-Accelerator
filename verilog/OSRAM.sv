@@ -22,8 +22,8 @@
 module OSRAM #(
     parameter integer NUM_ROWS  = `NUM_PES  // number of rows per bank
 )(
-    input                              clk,
-    input                              rst,
+    input                              clock,
+    input                              reset,
 
     // Handshaking between memory controller and backend
     input                              write_enable,    //Asserted when PEs are ready to write an entire bank (can just check the first one)
@@ -62,8 +62,8 @@ module OSRAM #(
     // Output drain data from the active drain bank the same cycle
     assign drain_data = (drain_bank == 0) ? bank0[drain_idx] : bank1[drain_idx];
 
-    always_ff @(posedge clk) begin
-        if (rst) begin
+    always_ff @(posedge clock) begin
+        if (reset) begin
             for (int i = 0; i < NUM_ROWS; i++) begin
                 bank0[i] <= '0;
                 bank1[i] <= '0;

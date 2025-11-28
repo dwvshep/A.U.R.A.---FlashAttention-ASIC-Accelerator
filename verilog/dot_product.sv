@@ -6,8 +6,8 @@
 
 module dot_product (
     //control signals
-    input clk,
-    input rst,
+    input clock,
+    input reset,
 
     //Handshake signals
     input Q_vld_in,    //Upstream valid
@@ -52,8 +52,8 @@ module dot_product (
     DOT_QT shifted_sum;
 
     //Latch Q input
-    always_ff @(posedge clk) begin
-        if(rst) begin
+    always_ff @(posedge clock) begin
+        if(reset) begin
             q <= '0;
             valid_q <= 1'b0;
             row_counter <= '0;
@@ -91,8 +91,8 @@ module dot_product (
     end
 
     //Latch K inputs
-    always_ff @(posedge clk) begin
-        if(rst) begin
+    always_ff @(posedge clock) begin
+        if(reset) begin
             k <= '0;
             valid_k <= 1'b0;
         end else begin
@@ -106,8 +106,8 @@ module dot_product (
     end
 
     //Latch V inputs
-    always_ff @(posedge clk) begin
-        if(rst) begin
+    always_ff @(posedge clock) begin
+        if(reset) begin
             v <= '0;
             valid_v <= 1'b0;
         end else begin
@@ -146,8 +146,8 @@ module dot_product (
     tree_reduce #(
         .STAGES(`NUM_REDUCE_STAGES)
     ) tree_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
 
         .vld_in(all_valid),
         .rdy_in(rdy_in),
@@ -174,8 +174,8 @@ module dot_product (
     V_VECTOR_T v_pipe [0:`NUM_REDUCE_STAGES-1];
     logic      v_valid_pipe [0:`NUM_REDUCE_STAGES-1];
 
-    always_ff @(posedge clk) begin
-        if (rst) begin
+    always_ff @(posedge clock) begin
+        if (reset) begin
             for (int i = 0; i < `NUM_REDUCE_STAGES; i++) begin
                 v_pipe[i] <= '0;
                 v_valid_pipe[i] <= 1'b0;

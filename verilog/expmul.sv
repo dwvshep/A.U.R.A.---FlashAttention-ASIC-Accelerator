@@ -2,8 +2,8 @@
 
 module expmul(
     //control signals
-    input clk,
-    input rst,
+    input clock,
+    input reset,
 
     //Handshake signals
     input vld_in,
@@ -48,8 +48,8 @@ module expmul(
 
  
     expmul_stage expmul_o_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         .vld_in(vld_in),
         .rdy_in(rdy_in),
         .vld_out(expmul_o_valid),
@@ -63,8 +63,8 @@ module expmul(
     );
 
     expmul_stage expmul_v_inst (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
         .vld_in(vld_in),
         .rdy_in(rdy_in),
         .vld_out(expmul_v_valid),

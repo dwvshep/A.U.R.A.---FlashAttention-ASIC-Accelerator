@@ -215,10 +215,10 @@ typedef EXPMUL_SHIFT_STAGE_QT [0:`MAX_EMBEDDING_DIM] EXPMUL_SHIFT_VECTOR_T;
 typedef logic [31:0] ADDR;
 
 //Base Addresses
-parameter ADDR K_BASE = 32'h0000_0000;   // 0
-parameter ADDR V_BASE = 32'h0000_8000;   // +32 KB
-parameter ADDR Q_BASE = 32'h0001_0000;   // +64 KB
-parameter ADDR O_BASE = 32'h0001_8000;   // +96 KB
+localparam ADDR K_BASE = 32'h0000_0000;   // 0
+localparam ADDR V_BASE = 32'h0000_8000;   // +32 KB
+localparam ADDR Q_BASE = 32'h0001_0000;   // +64 KB
+localparam ADDR O_BASE = 32'h0001_8000;   // +96 KB
 
 `define MEM_LATENCY_IN_CYCLES (100.0/`CLOCK_PERIOD+0.49999)
 // the 0.49999 is to force ceiling(100/period). The default behavior for

@@ -72,8 +72,8 @@ module testbench;
     // Instantiate the the Top-Level
     AURA AURA_dut (
         // Inputs
-        .clk (clock),
-        .rst (reset),
+        .clock (clock),
+        .reset (reset),
         
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
         .mem2proc_data            (mem2proc_data),

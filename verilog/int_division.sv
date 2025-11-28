@@ -3,8 +3,8 @@
 
 module int_division(
     // Control signals
-    input  logic clk,
-    input  logic rst,
+    input  logic clock,
+    input  logic reset,
 
     // Upstream
     input  logic vld_in,    // data from upstream is valid
@@ -44,8 +44,8 @@ module int_division(
     // -------------------------------------------------------------------------
     // INPUT LATCH: capture sign and magnitude when new transaction arrives
     // -------------------------------------------------------------------------
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
+    always_ff @(posedge clock or posedge reset) begin
+        if (reset) begin
             valid_reg <= 1'b0;
             start_div <= 1'b0;
             sign_n    <= 1'b0;
@@ -94,8 +94,8 @@ module int_division(
         .WIDTH(DIV_INPUT_W-1),              // your Q_WIDTH-1 config matches the type
         .FBITS(`DIV_INPUT_F)
     ) div_inst (
-        .clk   (clk),
-        .rst   (rst),
+        .clock   (clock),
+        .reset   (reset),
         .start (start_div),
         .busy  (div_busy),
         .done  (div_done),
@@ -132,8 +132,8 @@ module divu #(
     parameter WIDTH=`Q_WIDTH(`DIV_INPUT_I, `DIV_INPUT_F) - 1,  // width of numbers in bits (integer and fractional)
     parameter FBITS= `DIV_INPUT_F   // fractional bits within WIDTH
     ) (
-    input  clk,    // clock
-    input  rst,    // reset
+    input  clock,    // clock
+    input  reset,    // reset
     input wire logic start,  // start calculation
     output     logic busy,   // calculation in progress
     output     logic done,   // calculation is complete (high for one tick)
@@ -163,7 +163,7 @@ module divu #(
     end
 
     // calculation control
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clock) begin
         done <= 0;
         if (start) begin
             valid <= 0;
@@ -183,7 +183,7 @@ module divu #(
                 quo <= quo_next;
             end
         end
-        if (rst) begin
+        if (reset) begin
             busy <= 0;
             done <= 0;
             valid <= 0;

@@ -27,7 +27,7 @@ module int_division_tb;
     // --------------------------------------------------------
     // DUT Signals
     // --------------------------------------------------------
-    logic clk, rst;
+    logic clock, reset;
 
     // Handshake signals
     logic vld_in;
@@ -43,8 +43,8 @@ module int_division_tb;
     // Instantiate DUT
     // --------------------------------------------------------
     int_division dut (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
 
         .vld_in(vld_in),
         .rdy_in(rdy_in),
@@ -59,7 +59,7 @@ module int_division_tb;
     // --------------------------------------------------------
     // Clock
     // --------------------------------------------------------
-    always #5 clk = ~clk;   // 100 MHz
+    always #5 clock = ~clock;   // 100 MHz
 
     // --------------------------------------------------------
     // Helper Functions
@@ -131,15 +131,15 @@ module int_division_tb;
     // --------------------------------------------------------
 
     initial begin
-        clk = 0;
-        rst = 1;
+        clock = 0;
+        reset = 1;
         vld_in = 0;
         rdy_in = 1;
         numerator_in = '0;
         denominator_in = '0;
 
         #20;
-        rst = 0; 
+        reset = 0; 
     end
 
     // --------------------------------------------------------
@@ -200,14 +200,14 @@ module int_division_tb;
             g_r   = output_vec_to_real(golden_q);
 
             // Drive inputs
-            @(posedge clk);
+            @(posedge clock);
             wait (rdy_out == 1); // Wait until DUT is ready
 
             numerator_in   <= num;
             denominator_in <= den;
             vld_in         <= 1; 
 
-            @(posedge clk);
+            @(posedge clock);
             vld_in         <= 0;
             numerator_in   <= 'x;
             denominator_in <= 'x;
@@ -216,7 +216,7 @@ module int_division_tb;
             wait (vld_out == 1);
 
             // Sample result on the valid cycle
-            //@(posedge clk);
+            //@(posedge clock);
             total_count++;
 
             if (quotient_out === golden_q) begin
@@ -239,7 +239,7 @@ module int_division_tb;
             end
 
             // one idle cycle between tests
-            @(posedge clk);
+            @(posedge clock);
         end
     endtask
 
@@ -254,8 +254,8 @@ module int_division_tb;
             $display("OUTPUT_VEC_QT: Q(%0d,%0d)", `OUTPUT_VEC_I, `OUTPUT_VEC_F);
         `endif
 
-        @(negedge rst);
-        @(posedge clk);
+        @(negedge reset);
+        @(posedge clock);
 
         // --- Some directed edge cases ---
         run_single_test(real_to_div_input(0),       real_to_div_input(ONE_QIN)); // 0.0 / 1.0 -> 0.0

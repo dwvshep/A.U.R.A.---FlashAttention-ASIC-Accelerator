@@ -14,7 +14,7 @@ module dot_product_tb;
     // --------------------------------------------------------
     // DUT Signals
     // --------------------------------------------------------
-    logic clk, rst;
+    logic clock, reset;
 
     logic Q_vld_in, K_vld_in, rdy_in;
     logic vld_out;
@@ -32,8 +32,8 @@ module dot_product_tb;
     // Instantiate DUT
     // --------------------------------------------------------
     dot_product dut (
-        .clk(clk),
-        .rst(rst),
+        .clock(clock),
+        .reset(reset),
 
         .Q_vld_in(Q_vld_in),
         .K_vld_in(K_vld_in),
@@ -54,7 +54,7 @@ module dot_product_tb;
     // --------------------------------------------------------
     // Clock
     // --------------------------------------------------------
-    always #5 clk = ~clk;   // 100 MHz
+    always #5 clock = ~clock;   // 100 MHz
 
     // --------------------------------------------------------
     // Fixed-Point Helper Functions
@@ -117,15 +117,15 @@ module dot_product_tb;
         $display("PRODUCT_QT: Q(%0d,%0d)", `PRODUCT_I, `PRODUCT_F);
         $display("INTERMEDIATE_PRODUCT_QT: Q(%0d,%0d)", `INTERMEDIATE_PRODUCT_I, `INTERMEDIATE_PRODUCT_F);
         $display("DOT_QT: Q(%0d,%0d)", `DOT_I, `DOT_F);
-        clk = 0;
-        rst = 1;
+        clock = 0;
+        reset = 1;
         Q_vld_in = 0;
         K_vld_in = 0;
         rdy_in   = 1;
 
-        @(posedge clk);
-        @(posedge clk)
-        rst = 0;
+        @(posedge clock);
+        @(posedge clock)
+        reset = 0;
 
         for (int t = 0; t < NUM_TESTS; t++) begin
             //-----------------------------
@@ -136,7 +136,7 @@ module dot_product_tb;
 
             Q_vld_in = 1;
             wait (Q_rdy_out);
-            @(posedge clk);
+            @(posedge clock);
             Q_vld_in = 0;
 
             //-----------------------------
@@ -160,7 +160,7 @@ module dot_product_tb;
                 // handshake for K
                 K_vld_in = 1;
                 wait (K_rdy_out);
-                @(posedge clk);
+                @(posedge clock);
                 K_vld_in = 0;
 
                 // Check for result
@@ -178,7 +178,7 @@ module dot_product_tb;
 
             drain_cycles = 1 + `NUM_REDUCE_STAGES; // worst-case latency of pipeline
             while (expected_queue.size() > 0 && drain_cycles > 0) begin
-                @(posedge clk);
+                @(posedge clock);
 
                 if (vld_out) begin
                     expected = expected_queue.pop_front();

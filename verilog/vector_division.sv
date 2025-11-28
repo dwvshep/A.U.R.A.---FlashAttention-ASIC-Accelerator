@@ -5,8 +5,8 @@ module vector_division #(
     parameter int DATA_WIDTH = `INTEGER_WIDTH       // Bit width of each element
 )(
     // Control signals
-    input  clk,
-    input  rst,
+    input  clock,
+    input  reset,
 
     // Handshake signals
     input  vld_in,
@@ -45,8 +45,8 @@ module vector_division #(
                 .out(numerators[i])
             );
             int_division div_inst (
-                .clk(clk),
-                .rst(rst),
+                .clock(clock),
+                .reset(reset),
                 .vld_in(vld_in),
                 .rdy_in(rdy_in),
                 .vld_out(vld_out), //Connect this to top-level if needed
