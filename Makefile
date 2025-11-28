@@ -303,6 +303,32 @@ output/%.syn.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.syn.simv | outp
 # simulate_all_syn: build/aura.syn.simv compile_all $(PROGRAMS:programs/%=output/%.syn.out)
 # .PHONY: simulate_all simulate_all_syn
 
+###################
+# ---- Verdi ---- #
+###################
+
+# run verdi on a program with: 'make <my_program>.verdi' or 'make <my_program>.syn.verdi'
+
+# this creates a directory verdi will use if it doesn't exist yet
+verdi_dir:
+	mkdir -p /tmp/$${USER}470
+.PHONY: verdi_dir
+
+novas.rc: initialnovas.rc
+	sed s/UNIQNAME/$$USER/ initialnovas.rc > novas.rc
+
+%.verdi: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.simv novas.rc verdi_dir | output
+	./build/AURA.simv $(RUN_VERDI) \
+		+Q_MEMORY=$(word 1,$^) \
+		+K_MEMORY=$(word 2,$^) \
+		+V_MEMORY=$(word 3,$^) \
+		+OUTPUT=output/verdi_output
+
+%.syn.verdi: programs/mem/%.mem build/cpu.syn.simv novas.rc verdi_dir | output
+	./build/cpu.syn.simv $(RUN_VERDI) +MEMORY=$< +OUTPUT=output/syn_verdi_output
+
+.PHONY: %.verdi
+
 ################################
 # ---- Output Directories ---- #
 ################################
