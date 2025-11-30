@@ -51,47 +51,6 @@ std::vector<float> read_fp32_mem(const std::string &filename) {
     return data;
 }
 
-// #include <vector>
-// #include <fstream>
-// #include <string>
-// #include <algorithm>
-// #include <cctype>
-// #include <cstdint>
-// #include <cstring>
-
-// std::vector<float> read_fp32_mem(const std::string &filename) {
-//     std::ifstream fin(filename);
-//     std::vector<float> data;
-//     std::string line;
-    
-//     while (std::getline(fin, line)) {
-//         // remove whitespace
-//         line.erase(std::remove_if(line.begin(), line.end(), ::isspace), line.end());
-        
-//         // read 8 hex chars at a time
-//         for (size_t i = 0; i + 8 <= line.size(); i += 8) {
-//             std::string hexval = line.substr(i, 8);
-            
-//             // Convert hex string to uint32_t
-//             uint32_t intval = std::stoul(hexval, nullptr, 16);
-            
-//             // The hex string represents bytes in little-endian order
-//             // So we need to reverse the byte order to get the correct float
-//             uint32_t little_endian_val = 0;
-//             little_endian_val |= (intval & 0x000000FF) << 24;
-//             little_endian_val |= (intval & 0x0000FF00) << 8;
-//             little_endian_val |= (intval & 0x00FF0000) >> 8;
-//             little_endian_val |= (intval & 0xFF000000) >> 24;
-            
-//             // Convert to float
-//             float f;
-//             memcpy(&f, &little_endian_val, sizeof(float));
-//             data.push_back(f);
-//         }
-//     }
-//     return data;
-// }
-
 // ---------------------------
 // Quantize FP32 -> int8 using symmetric quantization
 // ---------------------------
@@ -111,36 +70,6 @@ std::vector<int8_t> quantize_fp32_to_int8(const std::vector<float>& data, float 
     return result;
 }
 
-// vector<vector<int8_t>> quantize_to_int8(const vector<vector<float>> &M) {
-//     constexpr int OUT_I = 1;  // number of integer bits
-//     constexpr int OUT_F = 7;  // number of fractional bits
-//     constexpr int W_OUT = OUT_I + OUT_F;
-
-//     vector<vector<int8_t>> out(ROWS, vector<int8_t>(COLS, 0));
-
-//     // precompute max/min representable integers
-//     const int32_t MAX_VAL = (1 << (W_OUT - 1)) - 1;   // 127 for 8-bit
-//     const int32_t MIN_VAL = -(1 << (W_OUT - 1));      // -128 for 8-bit
-
-//     for (int r = 0; r < ROWS; ++r) {
-//         for (int c = 0; c < COLS; ++c) {
-//             // scale real to fixed-point
-//             float scaled = M[r][c] * (1 << OUT_F);
-
-//             // saturate
-//             if (scaled > MAX_VAL) scaled = MAX_VAL;
-//             if (scaled < MIN_VAL) scaled = MIN_VAL;
-
-//             // round to nearest integer
-//             int32_t q = static_cast<int32_t>(roundf(scaled));
-
-//             out[r][c] = static_cast<int8_t>(q);
-//         }
-//     }
-
-//     return out;
-// }
-
 // ---------------------------
 // Write int8 mem file
 // Each row: 8 datapoints = 64 bits
@@ -149,6 +78,7 @@ std::vector<int8_t> quantize_fp32_to_int8(const std::vector<float>& data, float 
 
 
 //float 0.708990 -> *128 = 91(rounded to nearest int) = 01011011 = x5B --> interpreted as a Q0.7 = 91/128 = 0.710
+// 10101101
 
 
 void write_int8_mem(const std::vector<int8_t>& data, const std::string &filename, size_t row_length = 8) {
@@ -179,14 +109,13 @@ void write_int8_mem(const std::vector<int8_t>& data, const std::string &filename
 int main() {
     struct FilePair { std::string fp32; std::string int8; };
     std::vector<FilePair> files = {
-        {"../mem/Q_32.mem", "../mem/Q_8.mem"},
-        {"../mem/K_32.mem", "../mem/K_8.mem"},
-        {"../mem/V_32.mem", "../mem/V_8.mem"}
+        {"../mem/O_32.mem", "../mem/O_8.mem"}
     };
 
     for (auto &fp : files) {
         std::cout << "Processing " << fp.fp32 << " ..." << std::endl;
         auto data_fp32 = read_fp32_mem(fp.fp32);
+        //printf("%f   ", data_fp32[0]);
 
         float scale;
         auto data_int8 = quantize_fp32_to_int8(data_fp32, scale);
