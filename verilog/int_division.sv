@@ -107,7 +107,7 @@ module int_division(
 
     always_comb begin
         if (sign_q)
-            signed_q = {sign_q, ~div_unsigned_q + 1};
+            signed_q = {sign_q, ~div_unsigned_q};
         else
             signed_q = {sign_q, div_unsigned_q};
     end
