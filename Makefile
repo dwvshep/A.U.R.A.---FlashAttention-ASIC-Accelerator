@@ -249,7 +249,7 @@ $(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
 # ---- Program Memory Compilation ---- #
 ########################################
 
-GEN_QKV_SCRIPT = test/Generate_QKV.py
+GEN_QKV_SCRIPT = python/Generate_QKV.py
 
 # Pattern rule: build models/<test>/Q.mem, K.mem, V.mem if missing
 # $* is the stem (test name)
