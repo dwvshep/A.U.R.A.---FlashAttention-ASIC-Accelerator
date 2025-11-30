@@ -22,6 +22,7 @@ module vector_division #(
     // Internal signals
     DIV_INPUT_QT numerators [1:VEC_LEN];
     DIV_INPUT_QT denominator;
+    logic vld_outs [1:VEC_LEN];
 
     q_convert #(
         .IN_I(`EXPMUL_VEC_I),
@@ -49,7 +50,7 @@ module vector_division #(
                 .reset(reset),
                 .vld_in(vld_in),
                 .rdy_in(rdy_in),
-                .vld_out(vld_out), //Connect this to top-level if needed
+                .vld_out(vld_outs[i]), //Connect this to top-level if needed
                 .rdy_out(rdy_out), //Connect this to top-level if needed
                 .numerator_in(numerators[i]),
                 .denominator_in(denominator),
@@ -57,5 +58,7 @@ module vector_division #(
             );
         end
     endgenerate
+
+    assign vld_out = vld_outs[1];
 
 endmodule

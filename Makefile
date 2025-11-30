@@ -245,6 +245,20 @@ $(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
 # ---- Executable Compilation ---- #
 ####################################
 
+########################################
+# ---- Program Memory Compilation ---- #
+########################################
+
+GEN_QKV_SCRIPT = test/Generate_QKV.py
+
+# Pattern rule: build models/<test>/Q.mem, K.mem, V.mem if missing
+# $* is the stem (test name)
+models/%/Q.mem models/%/K.mem models/%/V.mem: 
+	@$(call PRINT_COLOR, 5, generating QKV memory files for test '$*')
+	mkdir -p models/$*
+	./$(GEN_QKV_SCRIPT) --model $*
+	@$(call PRINT_COLOR, 2, finished generating memory files for '$*')
+
 ###############################
 # ---- Program Execution ---- #
 ###############################
@@ -254,14 +268,14 @@ $(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
 # run one of the executables (simv/syn_simv) using the chosen test mem files
 # e.g. 'make random_test.out' does the following from a clean directory:
 #   1. compiles simv
-#   2. Grabs mem/random_test/ random_test.Qmem random_test.Kmem and random_test.Vmem
+#   2. Grabs models/random_test/ random_test.Qmem random_test.Kmem and random_test.Vmem
 #   3. runs ./simv +QMEMORY=random_test.Qmem +KMEMORY=random_test.Kmem +VMEMORY=random_test.Vmem +OUTPUT=output/random_test > output/random_test.out
 #   4. which creates the random_test.out and random_test.log files in output/
 # the same can be done for synthesis by doing 'make random_test.syn.out'
 # which will also create random_test.syn.out and random_test.syn.log files in output/
 
 # run a program and produce output files
-output/%.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.simv | output
+output/%.out: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.simv | output
 	@$(call PRINT_COLOR, 5, running simv on $*)
 	./build/AURA.simv \
 		+Q_MEMORY=$(word 1,$^) \
@@ -280,7 +294,7 @@ output/%.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.simv | output
 
 # this does the same as simv, but adds .syn to the output files and compiles syn_simv instead
 # run synthesis with: 'make <my_test>.syn.out'
-output/%.syn.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.syn.simv | output
+output/%.syn.out: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.syn.simv | output
 	@$(call PRINT_COLOR, 5, running syn_simv on $<)
 	@$(call PRINT_COLOR, 3, this might take a while...)
 	./build/AURA.syn.simv \
@@ -298,6 +312,9 @@ output/%.syn.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.syn.simv | outp
 
 .PRECIOUS: %.out
 
+
+
+
 # run all programs in one command (use 'make -j' to run multithreaded)
 # simulate_all: build/aura.simv compile_all $(PROGRAMS:programs/%=output/%.out)
 # simulate_all_syn: build/aura.syn.simv compile_all $(PROGRAMS:programs/%=output/%.syn.out)
@@ -311,21 +328,25 @@ output/%.syn.out: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.syn.simv | outp
 
 # this creates a directory verdi will use if it doesn't exist yet
 verdi_dir:
-	mkdir -p /tmp/$${USER}470
+	mkdir -p /tmp/$${USER}570
 .PHONY: verdi_dir
 
 novas.rc: initialnovas.rc
 	sed s/UNIQNAME/$$USER/ initialnovas.rc > novas.rc
 
-%.verdi: mem/%/Q.mem mem/%/K.mem mem/%/V.mem build/AURA.simv novas.rc verdi_dir | output
+%.verdi: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.simv novas.rc verdi_dir | output
 	./build/AURA.simv $(RUN_VERDI) \
 		+Q_MEMORY=$(word 1,$^) \
 		+K_MEMORY=$(word 2,$^) \
 		+V_MEMORY=$(word 3,$^) \
 		+OUTPUT=output/verdi_output
 
-%.syn.verdi: programs/mem/%.mem build/cpu.syn.simv novas.rc verdi_dir | output
-	./build/cpu.syn.simv $(RUN_VERDI) +MEMORY=$< +OUTPUT=output/syn_verdi_output
+%.syn.verdi: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.syn.simv novas.rc verdi_dir | output
+	./build/AURA.syn.simv $(RUN_VERDI) \
+	+Q_MEMORY=$(word 1,$^) \
+	+K_MEMORY=$(word 2,$^) \
+	+V_MEMORY=$(word 3,$^) \
+	+OUTPUT=output/syn_verdi_output
 
 .PHONY: %.verdi
 
@@ -336,7 +357,7 @@ novas.rc: initialnovas.rc
 # Directories for holding build files or run outputs
 # Targets that need these directories should add them after a pipe.
 # ex: "target: dep1 dep2 ... | build"
-build synth output programs/mem:
+build synth output models:
 	mkdir -p $@
 # Don't leave any files in these, they will be deleted by clean commands
 
@@ -359,7 +380,7 @@ clean: clean_exe clean_run_files
 
 # removes all extra synthesis files and the entire output directory
 # use cautiously, this can cause hours of recompiling in project 4
-nuke: clean clean_output clean_synth clean_programs
+nuke: clean clean_output clean_synth clean_models
 	@$(call PRINT_COLOR, 6, note: nuke is split into multiple commands you can call separately: $^)
 
 clean_exe:
@@ -384,11 +405,11 @@ clean_output:
 	@$(call PRINT_COLOR, 1, removing entire output directory)
 	rm -rf output/
 
-clean_programs:
-	@$(call PRINT_COLOR, 3, removing program memory files)
-	rm -rf programs/*.mem
+clean_models:
+	@$(call PRINT_COLOR, 3, removing model memory files)
+	rm -rf models/*.mem
 	@$(call PRINT_COLOR, 3, removing dump files)
-	rm -rf programs/*.dump*
+	rm -rf models/*.dump*
 
 .PHONY: clean nuke clean_%
 

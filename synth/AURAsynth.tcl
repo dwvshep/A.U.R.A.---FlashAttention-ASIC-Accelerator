@@ -103,7 +103,7 @@ set link_library "* $target_library"
 # the search path is where dc_shell will search for files to read and load
 # lec25dscc25_TT.db is located in the last location
 # set search_path [list "./" "../" "/afs/umich.edu/class/eecs470/lib/synopsys/"]
-set search_path [list "./" "../" "/ust/caen/misc/class/eecs470/lib/synopsys/"]
+set search_path [list "./" "../" "/home/dwvshep/eecs570/CellLibrary250nm/"]
 
 ###########################################
 # ---- setup miscellaneous variables ---- #
