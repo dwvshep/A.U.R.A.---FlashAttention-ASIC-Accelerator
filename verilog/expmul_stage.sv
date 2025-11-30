@@ -58,9 +58,8 @@ module expmul_stage (
     EXPMUL_SHIFT_VECTOR_T shift_stage_3_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_4_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_5_result; //Q9.23
-
-    `Q_TYPE(6, 4) log_e_x_test;
-    `Q_TYPE(5, 4) x_diff_expanded;
+    
+    // `Q_TYPE(5, 4) x_diff_expanded;
     EXPMUL_VEC_QT v_in_1, v_out_1, v_out_0;
 
     assign v_in_1 = v_in[1];
@@ -101,29 +100,29 @@ module expmul_stage (
         end
     end
 
-    q_convert #(.IN_I(5), .IN_F(4), .OUT_I(5), .OUT_F(2)) x_diff_condense(
-        .in(x_diff),
-        .out(x_diff_condensed)
-    );
+    // q_convert #(.IN_I(EXPMUL_DIFF_OUT_I), .IN_F(EXPMUL_DIFF_OUT_F), .OUT_I(EXP_LOG2E_IN_I), .OUT_F(EXP_LOG2E_IN_F)) x_diff_condense(
+    //     .in(x_diff),
+    //     .out(x_diff_condensed)
+    // );
 
     // q_convert #(.IN_I(5), .IN_F(4), .OUT_I(5), .OUT_F(8)) x_diff_expand(
     //     .in(x_diff),
     //     .out(x_diff_expanded)
     // );
     
-    // q_convert #(.IN_I(6), .IN_F(2), .OUT_I(4), .OUT_F(0)) log_e_x_condense(
-    //     .in(log_e_x),
-    //     .out(l_hat_next)
-    // );
-
-    q_convert #(.IN_I(6), .IN_F(4), .OUT_I(4), .OUT_F(0)) log_e_x_condense(
-        .in(log_e_x_test),
+    q_convert #(.IN_I(`EXP_LOG2E_OUT_I), .IN_F(`EXP_LOG2E_OUT_F), .OUT_I(`EXPMUL_EXP_I), .OUT_F(`EXPMUL_EXP_F)) log_e_x_condense(
+        .in(log_e_x),
         .out(l_hat_next)
     );
 
+    // q_convert #(.IN_I(`EXP_LOG2E_OUT_I), .IN_F(`EXP_LOG2E_OUT_F), .OUT_I(`EXPMUL_EXP_I), .OUT_F(`EXPMUL_EXP_F)) log_e_x_condense(
+    //     .in(log_e_x_test),
+    //     .out(l_hat_next)
+    // );
+
     generate
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
-            q_convert #(.IN_I(9), .IN_F(23), .OUT_I(9), .OUT_F(17)) v_out_condense(
+            q_convert #(.IN_I(`EXPMUL_SHIFT_STAGE_I), .IN_F(`EXPMUL_SHIFT_STAGE_F), .OUT_I(`EXPMUL_VEC_I), .OUT_F(`EXPMUL_VEC_F)) v_out_condense(
                 .in(shift_stage_5_result[i]),
                 .out(v_out[i])
             );
@@ -132,7 +131,7 @@ module expmul_stage (
 
     generate
         for (genvar i = 0; i < `MAX_EMBEDDING_DIM + 1; i++) begin
-            q_convert #(.IN_I(9), .IN_F(17), .OUT_I(9), .OUT_F(23)) v_stage_expand(
+            q_convert #(.IN_I(`EXPMUL_VEC_I), .IN_F(`EXPMUL_VEC_F), .OUT_I(`EXPMUL_SHIFT_STAGE_I), .OUT_F(`EXPMUL_SHIFT_STAGE_F)) v_stage_expand(
                 .in(v_stage_2[i]),
                 .out(v_stage_2_expanded[i])
             );
@@ -162,8 +161,9 @@ module expmul_stage (
     //output is combinational
     always_comb begin
         // log_e_x = x_diff_condensed + (x_diff_condensed >>> 1) - (x_diff_condensed >>> 4);
-        log_e_x_test = x_diff + (x_diff >>> 1) - (x_diff >>> 4);
+        // log_e_x_test = x_diff + (x_diff >>> 1) - (x_diff >>> 4);
         // log_e_x_test = x_diff_expanded + (x_diff_expanded >>> 1) - (x_diff_expanded >>> 4);
+        log_e_x = x_diff + (x_diff >>> 1) - (x_diff >>> 4);
     end
 
     generate    

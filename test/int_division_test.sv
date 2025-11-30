@@ -196,8 +196,8 @@ module int_division_tb;
 
             num_r = div_input_to_real(num);
             den_r = div_input_to_real(den);
-            q_r   = output_vec_to_real(quotient_out);
-            g_r   = output_vec_to_real(golden_q);
+            // q_r   = output_vec_to_real(quotient_out);
+            // g_r   = output_vec_to_real(golden_q);
 
             // Drive inputs
             @(posedge clock);
@@ -218,6 +218,10 @@ module int_division_tb;
             // Sample result on the valid cycle
             //@(posedge clock);
             total_count++;
+
+            q_r   = output_vec_to_real(quotient_out);
+            g_r   = output_vec_to_real(golden_q);
+
 
             if (quotient_out === golden_q) begin
                 `ifdef INT_DIV_DEBUG
