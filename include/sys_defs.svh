@@ -33,7 +33,7 @@
 
 `define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `QBYTES_FETCHED_PER_CYCLE) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
 
-`define NUM_PES 4        // Number of parallel processing elements
+`define NUM_PES 8        // Number of parallel processing elements
 
 `define NUM_TILES (`MAX_SEQ_LENGTH/`NUM_PES)
 

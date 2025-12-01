@@ -93,23 +93,24 @@ int main(int argc, char **argv) {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    string qfile = "../mem/Q_32.mem";
-    string kfile = "../mem/K_32.mem";
-    string vfile = "../mem/V_32.mem";
-    string outfile = "../mem/O_32.mem";
-
-    if (argc == 4) {
-        qfile = argv[1]; kfile = argv[2]; vfile = argv[3];
-    } else if (argc == 5) {
-        qfile = argv[1]; kfile = argv[2]; vfile = argv[3]; outfile = argv[4];
+    if (argc != 5) {
+        cerr << "Usage: " << argv[0]
+             << " <Q.mem> <K.mem> <V.mem> <O_float_correct.mem>\n";
+        return 1;
     }
+
+    string qfile = argv[1];
+    string kfile = argv[2];
+    string vfile = argv[3];
+    string outfile = argv[4];
 
     try {
         cerr << "Reading " << qfile << "...\n";
         auto Q = read_fp32_mem(qfile);
-        printf("input: %f\n", Q[0][0]);
+
         cerr << "Reading " << kfile << "...\n";
         auto K = read_fp32_mem(kfile);
+
         cerr << "Reading " << vfile << "...\n";
         auto V = read_fp32_mem(vfile);
 
@@ -117,7 +118,6 @@ int main(int argc, char **argv) {
         vector<float> scores(ROWS), weights(ROWS);
 
         for (int i = 0; i < ROWS; ++i) {
-            // attention scores
             float max_score = -numeric_limits<float>::infinity();
             for (int j = 0; j < ROWS; ++j) {
                 float s = dot64(Q[i], K[j]) * SCALE;
@@ -125,7 +125,6 @@ int main(int argc, char **argv) {
                 max_score = max(max_score, s);
             }
 
-            // softmax
             float sumexp = 0.0f;
             for (int j = 0; j < ROWS; ++j) {
                 float e = exp(scores[j] - max_score);
@@ -133,9 +132,9 @@ int main(int argc, char **argv) {
                 sumexp += e;
             }
             if (sumexp == 0.0f) sumexp = 1e-12f;
-            for (int j = 0; j < ROWS; ++j) weights[j] /= sumexp;
+            for (int j = 0; j < ROWS; ++j)
+                weights[j] /= sumexp;
 
-            // weighted sum over V
             vector<float> out(COLS, 0.0f);
             for (int j = 0; j < ROWS; ++j)
                 for (int d = 0; d < COLS; ++d)
@@ -143,11 +142,11 @@ int main(int argc, char **argv) {
 
             O[i] = out;
 
-            if ((i % 64) == 0) cerr << "Computed row " << i << "/" << ROWS << "\n";
+            if ((i % 64) == 0)
+                cerr << "Computed row " << i << "/" << ROWS << "\n";
         }
 
         cerr << "Writing FP32 output to " << outfile << "...\n";
-        printf("output: %f\n", O[0][0]);
         write_fp32_mem(outfile, O);
         cerr << "Done.\n";
 

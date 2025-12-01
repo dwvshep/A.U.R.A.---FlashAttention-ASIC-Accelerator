@@ -23,13 +23,13 @@ MODEL_NAME = args.model
 SEQ_LEN = args.seq
 HEAD_IDX = args.head
 
-OUT_DIR = f"models/{TEST}"
+OUT_DIR = f"models/{MODEL_NAME}"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 OUTPUT_FILES = [
-    f"{OUT_DIR}/Q.mem",
-    f"{OUT_DIR}/K.mem",
-    f"{OUT_DIR}/V.mem"
+    f"{OUT_DIR}/Q32.mem",
+    f"{OUT_DIR}/K32.mem",
+    f"{OUT_DIR}/V32.mem"
 ]
 
 print(f"[INFO] Generating Q/K/V for test '{MODEL_NAME}' into directory: {OUT_DIR}")

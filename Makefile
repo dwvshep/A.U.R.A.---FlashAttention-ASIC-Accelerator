@@ -23,6 +23,30 @@ SHELL := $(SHELL) -o pipefail
 
 GREP = grep -E --color=auto
 
+PYTHON = python
+
+CXX = g++
+CXXFLAGS = -o3 -std=c++17
+
+
+##################################
+# ---- Analysis Executables ---- #
+##################################
+
+cpp/%: cpp/%.cpp | cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+# cpp/precision_measure: cpp/precision_measure.cpp | cpp
+# 	$(CXX) $(CXXFLAGS) -o cpp/precision_measure.cpp cpp/precision_measure
+
+# cpp/attention_fp32: cpp/attention_fp32.cpp | cpp
+# 	$(CXX) $(CXXFLAGS) -o cpp/attention_fp32.cpp cpp/attention_fp32
+
+# cpp/fp32_to_f8: cpp/fp32_to_f8.cpp | cpp
+# 	$(CXX) $(CXXFLAGS) -o cpp/fp32_to_f8.cpp cpp/fp32_to_f8
+
+
+
 ################################
 # ---- Module Testbenches ---- #
 ################################
@@ -251,13 +275,52 @@ $(MODULES:=.cov.verdi): %.cov.verdi: build/%.cov.simv
 
 GEN_QKV_SCRIPT = python/Generate_QKV.py
 
+models/%/Q32.mem models/%/K32.mem models/%/V32.mem &:
+	@$(call PRINT_COLOR, 5, generating QKV floating point memory files for test '$*')
+	mkdir -p models/$*
+	$(PYTHON) $(GEN_QKV_SCRIPT) --model $*
+	@$(call PRINT_COLOR, 2, finished generating floating point memory files for '$*')
+
 # Pattern rule: build models/<test>/Q.mem, K.mem, V.mem if missing
 # $* is the stem (test name)
-models/%/Q.mem models/%/K.mem models/%/V.mem: 
-	@$(call PRINT_COLOR, 5, generating QKV memory files for test '$*')
+models/%/Q.mem models/%/K.mem models/%/V.mem &: models/%/Q32.mem models/%/K32.mem models/%/V32.mem | cpp/fp32_to_f8
+	@$(call PRINT_COLOR, 5, generating QKV fixed point memory files for test '$*')
 	mkdir -p models/$*
-	./$(GEN_QKV_SCRIPT) --model $*
-	@$(call PRINT_COLOR, 2, finished generating memory files for '$*')
+	./cpp/fp32_to_f8 models/$*/Q32.mem models/$*/Q.mem
+	./cpp/fp32_to_f8 models/$*/K32.mem models/$*/K.mem
+	./cpp/fp32_to_f8 models/$*/V32.mem models/$*/V.mem
+	@$(call PRINT_COLOR, 2, finished generating fixed point memory files for '$*')
+
+models/%/O_float_correct.mem: models/%/Q32.mem models/%/K32.mem models/%/V32.mem | cpp/attention_fp32
+	@$(call PRINT_COLOR, 5, generating correct floating point memory output for test '$*')
+	./cpp/attention_fp32 $^ $@
+
+models/%/O_fixed_correct.mem: models/%/O_float_correct.mem | cpp/fp32_to_f8
+	@$(call PRINT_COLOR, 5, generating correct fixed point memory output for test '$*')
+	./cpp/fp32_to_f8 models/$*/O_float_correct.mem $@
+
+models/%/O_cleaned.mem: output/%.out python/strip_out_file.py | python
+	$(PYTHON) python/strip_out_file.py $< models/$*/O_cleaned.mem
+
+#Enforce that all dec files are created any time a mem file is created
+models/%/%.mem: | models/%/%.dec
+
+%.dec: %.mem
+	@$(call PRINT_COLOR, 5, converting $< to decimal)
+	$(PYTHON) python/convert_to_decimal.py $< $@
+	@$(call PRINT_COLOR, 2, wrote $@)
+
+.PRECIOUS: \
+    models/%/Q32.mem \
+    models/%/K32.mem \
+    models/%/V32.mem \
+    models/%/Q.mem \
+    models/%/K.mem \
+    models/%/V.mem \
+    models/%/O_float_correct.mem \
+    models/%/O_fixed_correct.mem \
+    models/%/O_cleaned.mem \
+	%.dec
 
 ###############################
 # ---- Program Execution ---- #
@@ -286,6 +349,11 @@ output/%.out: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.simv | out
 	@$(call PRINT_COLOR, 6, finished running simv on $*)
 	@$(call PRINT_COLOR, 2, output is in output/$*.{out log})
 
+
+# desired metrics:
+# Output from precision measure (<testname>.prec)
+
+
 # NOTE: this uses a 'static pattern rule' to match a list of known targets to a pattern
 # and then generates the correct rule based on the pattern, where % and $* match
 # so for the target 'output/sampler.out' the % matches 'sampler' and depends on programs/sampler.mem
@@ -309,11 +377,16 @@ output/%.syn.out: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.syn.si
 # Allow us to type 'make <my_program>.out' instead of 'make output/<my_program>.out'
 ./%.out: output/%.out ;
 .PHONY: ./%.out
-
 .PRECIOUS: %.out
 
 
+output/%.prec: output/%.out cpp/precision_measure models/%/O_fixed_correct.mem models/%/O_cleaned.mem | cpp/precision_measure
+	./cpp/precision_measure models/$*/O_fixed_correct.mem models/$*/O_cleaned.mem > $@
 
+# Allow us to type 'make ./foo.prec' instead of 'make output/foo.prec'
+./%.prec: output/%.prec ;
+.PHONY: ./%.prec
+.PRECIOUS: output/%.prec
 
 # run all programs in one command (use 'make -j' to run multithreaded)
 # simulate_all: build/aura.simv compile_all $(PROGRAMS:programs/%=output/%.out)
@@ -357,7 +430,7 @@ novas.rc: initialnovas.rc
 # Directories for holding build files or run outputs
 # Targets that need these directories should add them after a pipe.
 # ex: "target: dep1 dep2 ... | build"
-build synth output models:
+build synth output models cpp python:
 	mkdir -p $@
 # Don't leave any files in these, they will be deleted by clean commands
 
@@ -395,7 +468,7 @@ clean_exe:
 
 clean_run_files:
 	@$(call PRINT_COLOR, 3, removing per-run outputs)
-	rm -rf output/*.out output/*.cpi output/*.wb output/*.log
+	rm -rf output/*.out output/*.prec output/*.log
 
 clean_synth:
 	@$(call PRINT_COLOR, 1, removing synthesis files)
@@ -426,25 +499,5 @@ PRINT_COLOR = if [ -t 0 ]; then tput setaf $(1) ; fi; echo $(2); if [ -t 0 ]; th
 # Make functions are called like this:
 # $(call PRINT_COLOR,3,Hello World!)
 # NOTE: adding '@' to the start of a line avoids printing the command itself, only the output
-
-
-# CXX = g++
-# CXXFLAGS = -O2 -Wall
-
-# TARGET = gen_qkv_mem
-# SRC = gen_qkv_mem.cpp
-
-# MEM_FILES = Q.mem K.mem V.mem
-
-# all: run
-
-# $(TARGET): tb/$(SRC)
-# 	$(CXX) $(CXXFLAGS) -o tb/$(TARGET) tb/$(SRC)
-
-# run: $(TARGET)
-# 	./$(TARGET)
-
-# clean:
-# 	rm -f tb/$(TARGET) output/$(MEM_FILES)
 
 
