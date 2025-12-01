@@ -302,13 +302,6 @@ models/%/O_fixed_correct.mem: models/%/O_float_correct.mem | cpp/fp32_to_f8
 models/%/O_cleaned.mem: output/%.out python/strip_out_file.py | python
 	$(PYTHON) python/strip_out_file.py $< models/$*/O_cleaned.mem
 
-#Enforce that all dec files are created any time a mem file is created
-models/%/%.mem: | models/%/%.dec
-
-%.dec: %.mem
-	@$(call PRINT_COLOR, 5, converting $< to decimal)
-	$(PYTHON) python/convert_to_decimal.py $< $@
-	@$(call PRINT_COLOR, 2, wrote $@)
 
 .PRECIOUS: \
     models/%/Q32.mem \
