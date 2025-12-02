@@ -29,11 +29,11 @@ void generate_mem(const std::string &filename, int rows) {
 int main() {
     const int ROWS = 512*8;
 
-    std::filesystem::create_directories("../mem");
+    std::filesystem::create_directories("../models/random");
 
-    generate_mem("../mem/Q.mem", ROWS);
-    generate_mem("../mem/K.mem", ROWS);
-    generate_mem("../mem/V.mem", ROWS);
+    generate_mem("../models/random/Q.mem", ROWS);
+    generate_mem("../models/random/K.mem", ROWS);
+    generate_mem("../models/random/V.mem", ROWS);
 
     return 0;
 }

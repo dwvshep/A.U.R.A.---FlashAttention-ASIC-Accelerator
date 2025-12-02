@@ -81,7 +81,10 @@ void compare_outputs(const vector<vector<int8_t>> &ref,
     for (int r = 0; r < ROWS; ++r) {
         for (int c = 0; c < COLS; ++c) {
             int f = ref[r][c];
+            double num = std::abs((double)asic[r][c] - (double)f);
+            double den = std::abs((double)f);
             if (f != 0) {
+                //sum_rel += num / den;
                 sum_rel += abs((int)asic[r][c] - f) / (double)f;
                 count_rel++;
             }

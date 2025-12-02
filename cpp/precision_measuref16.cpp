@@ -100,7 +100,8 @@ void compare_outputs(const vector<vector<int16_t>> &ref,
         for (int c = 0; c < COLS; ++c) {
             int f = ref[r][c];
             if (f != 0) {
-                sum_rel += abs(asic[r][c] - f) / double(f);
+                int16_t a = asic[r][c];
+                sum_rel += abs(a - f) / abs(double(f)); //max(abs(f), abs(a));
                 count_rel++;
             }
         }
