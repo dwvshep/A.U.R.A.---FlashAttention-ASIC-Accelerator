@@ -66,6 +66,7 @@ module testbench;
     localparam integer V_IDX = V_BASE >> 3;
     localparam integer Q_IDX = Q_BASE >> 3;
     localparam integer O_IDX = O_BASE >> 3;
+    localparam integer BUF_SZ = BUF_SIZE_BYTES >> 3;
     localparam integer ROW = 512;
 
     
@@ -170,9 +171,9 @@ module testbench;
 
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
-        $readmemh(Q_mem, memory.unified_memory, Q_IDX, Q_IDX + (ROW * 8) - 1);
-        $readmemh(K_mem, memory.unified_memory, K_IDX, K_IDX + (ROW * 8) - 1);
-        $readmemh(V_mem, memory.unified_memory, V_IDX, V_IDX + (ROW * 8) - 1);
+        $readmemh(Q_mem, memory.unified_memory, Q_IDX, Q_IDX + BUF_SZ - 1);
+        $readmemh(K_mem, memory.unified_memory, K_IDX, K_IDX + BUF_SZ - 1);
+        $readmemh(V_mem, memory.unified_memory, V_IDX, V_IDX + BUF_SZ - 1);
 
         @(posedge clock);
         @(posedge clock);
@@ -339,8 +340,8 @@ module testbench;
             $fdisplay(out_fileno, "Display starts at Base Addr: %x", O_BASE);
             $fdisplay(out_fileno, "@@@");
 
-            for(int k = 0; k < ROW * 8; k++) begin
-                $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, updated_memory[O_IDX + k], updated_memory[O_IDX + k]);
+            for(int k = 0; k < ROW * `INTEGER_WIDTH; k++) begin
+                $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*`INTEGER_WIDTH, updated_memory[O_IDX + k], updated_memory[O_IDX + k]);
             end
 
             $fdisplay(out_fileno, "@@@");

@@ -10,7 +10,8 @@ module memory_controller #(
     parameter ADDR O_BASE          = O_BASE,
     parameter int  VECTOR_BYTES    = (`MEM_BLOCKS_PER_VECTOR*8),
     parameter int  TILE_SIZE       = `NUM_PES, // # of vectors per tile
-    parameter int  TILE_BYTES      = TILE_SIZE * VECTOR_BYTES
+    parameter int  TILE_BYTES      = TILE_SIZE * VECTOR_BYTES,
+    parameter int ELEMENTS_PER_MEMBLOCK = `MEM_BLOCK_SIZE_BITS / `INTEGER_WIDTH
 )(
     input clock,
     input reset,
@@ -176,10 +177,10 @@ module memory_controller #(
 
                     //insert mem2proc_data into vector buffer
                     //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
-                    for(int i = 0; i < 8; i++) begin
+                    for(int i = 0; i < ELEMENTS_PER_MEMBLOCK; i++) begin
                         next_vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
                     end
-                    next_write_index = write_index + 8; //Auto wraps
+                    next_write_index = write_index + ELEMENTS_PER_MEMBLOCK; //Auto wraps
                     next_blk_count = next_blk_count + 1; //if currently full, this should be 1
 
                     next_tag_head = tag_head + 1;
@@ -221,10 +222,10 @@ module memory_controller #(
 
                     //insert mem2proc_data into vector buffer
                     //THIS FOR LOOP IS HARD CODED BASED ON OUR ASSUMED INT WIDTH AND DK, MAKE IT GENERALIZABLE LATER
-                    for(int i = 0; i < 8; i++) begin
+                    for(int i = 0; i < ELEMENTS_PER_MEMBLOCK; i++) begin
                         next_vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
                     end
-                    next_write_index = write_index + 8; //Auto wraps
+                    next_write_index = write_index + ELEMENTS_PER_MEMBLOCK; //Auto wraps
                     next_blk_count = next_blk_count + 1; //if currently full, this should be 1
 
                     next_tag_head = tag_head + 1;
@@ -280,12 +281,12 @@ module memory_controller #(
                         proc2mem_addr = mem_base_addr + blk_to_fetch * `MEM_BLOCK_SIZE_BYTES;
 
                         // Store data from buffer
-                        for (int i = 0; i < 8; i++) begin
+                        for (int i = 0; i < ELEMENTS_PER_MEMBLOCK; i++) begin
                             proc2mem_data.byte_level[i] = vector_buffer[write_index+i];
                         end
 
                         // Counter Updates
-                        next_write_index = write_index + 8;
+                        next_write_index = write_index + ELEMENTS_PER_MEMBLOCK;
                         next_blk_count = blk_count - 1;
                         next_blk_to_fetch = blk_to_fetch + 1;
 
@@ -347,10 +348,10 @@ module memory_controller #(
 
                         // If a mem block returned this cycle:
                         if (!tags_empty && mem2proc_data_tag == expected_tag_fifo[tag_head]) begin
-                            for (int i = 0; i < 8; i++) begin
+                            for (int i = 0; i < ELEMENTS_PER_MEMBLOCK; i++) begin
                                 next_vector_buffer[write_index+i] = mem2proc_data.byte_level[i];
                             end
-                            next_write_index = write_index + 8;
+                            next_write_index = write_index + ELEMENTS_PER_MEMBLOCK;
                             next_blk_count   = next_blk_count + 1;
                             next_tag_head    = tag_head + 1;
                         end

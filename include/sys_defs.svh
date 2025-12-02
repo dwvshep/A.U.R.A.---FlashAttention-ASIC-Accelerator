@@ -33,7 +33,7 @@
 
 `define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `QBYTES_FETCHED_PER_CYCLE) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
 
-`define NUM_PES 8        // Number of parallel processing elements
+`define NUM_PES 4        // Number of parallel processing elements
 
 `define NUM_TILES (`MAX_SEQ_LENGTH/`NUM_PES)
 
@@ -85,12 +85,12 @@
 
 //Input vectors (QKV)
 `define INPUT_VEC_I 0
-`define INPUT_VEC_F 7
+`define INPUT_VEC_F (`INTEGER_WIDTH - 1)
 typedef `Q_TYPE(`INPUT_VEC_I, `INPUT_VEC_F) INPUT_VEC_QT;
 
 //Output vectors (O)
 `define OUTPUT_VEC_I 0
-`define OUTPUT_VEC_F 7
+`define OUTPUT_VEC_F (`INTEGER_WIDTH - 1)
 typedef `Q_TYPE(`OUTPUT_VEC_I, `OUTPUT_VEC_F) OUTPUT_VEC_QT;
 
 //Intermediate QTypes defined below have precision widths that
@@ -104,7 +104,7 @@ typedef `Q_TYPE(`OUTPUT_VEC_I, `OUTPUT_VEC_F) OUTPUT_VEC_QT;
 `define EXPMUL_SHIFT_STAGE_F `EXPMUL_VEC_F + 6
 
 `define EXPMUL_EXP_F 0
-`define EXP_LOG2E_OUT_F 4 //(`ROUNDING + 1)
+`define EXP_LOG2E_OUT_F (`ROUNDING + 3) //(`ROUNDING + 7)
 `define EXP_LOG2E_IN_F `EXP_LOG2E_OUT_F
 `define EXPMUL_DIFF_OUT_F (`EXP_LOG2E_IN_F + 1 + `ROUNDING)
 `define EXPMUL_DIFF_IN_F `EXPMUL_DIFF_OUT_F
@@ -214,11 +214,19 @@ typedef EXPMUL_SHIFT_STAGE_QT [0:`MAX_EMBEDDING_DIM] EXPMUL_SHIFT_VECTOR_T;
 
 typedef logic [31:0] ADDR;
 
-//Base Addresses
-localparam ADDR K_BASE = 32'h0000_0000;   // 0
-localparam ADDR V_BASE = 32'h0000_8000;   // +32 KB
-localparam ADDR Q_BASE = 32'h0001_0000;   // +64 KB
-localparam ADDR O_BASE = 32'h0001_8000;   // +96 KB
+// Total bytes needed per memory section
+localparam int BUF_SIZE_BYTES = `MAX_SEQ_LENGTH * `MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8;
+
+// ----------------------------
+// Base addresses
+// ----------------------------
+localparam ADDR K_BASE = 32'h0000_0000;
+
+localparam ADDR V_BASE = K_BASE + BUF_SIZE_BYTES;
+
+localparam ADDR Q_BASE = V_BASE + BUF_SIZE_BYTES;
+
+localparam ADDR O_BASE = Q_BASE + BUF_SIZE_BYTES;
 
 `define MEM_LATENCY_IN_CYCLES (100.0/`CLOCK_PERIOD+0.49999)
 // the 0.49999 is to force ceiling(100/period). The default behavior for
@@ -229,7 +237,7 @@ localparam ADDR O_BASE = 32'h0001_8000;   // +96 KB
 `define NUM_MEM_TAGS 15
 typedef logic [3:0] MEM_TAG;
 
-`define MEM_SIZE_IN_BYTES (64*1024*2)
+`define MEM_SIZE_IN_BYTES (4 * `MAX_SEQ_LENGTH * `MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)
 
 `define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)
 

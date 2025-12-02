@@ -1,0 +1,47 @@
+# where the magic happens
+# map_effort can be changed to high if you're ok with time increasing for better performance
+# or you can change from compile to compile_ultra for best performance, but likely increased time
+compile -map_effort medium
+# compile_ultra
+
+# for POWER reporting
+# Either manual switching across entire design
+set_switching_activity {/$design_name/**} 1.0     ; # 100%
+# Or simulate workflow and record into SAIF the switching statistics
+# read_saif design.saif
+
+# Set power characteristic for clock
+set_switching_activity {/$design_name/$clock_name} 1.0
+
+# set power statistics
+characterize -power
+################################
+# ---- write output files ---- #
+################################
+
+# note the .chk file is written just before the compile command above
+set netlist_file ./${design_name}.vg       ;# our .vg file! it's generated here!
+set ddc_file     ./${design_name}.ddc      ;# the internal dc_shell design representation (binary data)
+set svsim_file   ./${design_name}_svsim.sv ;# a simulation instantiation wrapper
+set rep_file     ./${design_name}.rep      ;# area, timing, constraint, resource, and netlist reports
+
+# write the design into both sv and ddc formats, also the svsim wrapper
+write_file -hierarchy -format verilog -output $netlist_file $design_name
+write_file -hierarchy -format ddc     -output $ddc_file     $design_name
+write_file            -format svsim   -output $svsim_file   $design_name
+
+# the various reports (design, area, timing, constraints, resources)
+redirect         $rep_file { report_design -nosplit }
+redirect -append $rep_file { report_area}
+redirect -append $rep_file { report_power -analysis_effort high }
+redirect -append $rep_file { report_timing -max_paths 2 -input_pins -nets -transition_time -nosplit }
+redirect -append $rep_file { report_constraint -max_delay -verbose -nosplit }
+redirect -append $rep_file { report_resources -hier }
+
+# also report a reference of the used modules from the final netlist
+remove_design -all
+read_file -format verilog $netlist_file
+current_design $design_name
+redirect -append $rep_file { report_reference -nosplit }
+
+exit 0 ;# success! (maybe)

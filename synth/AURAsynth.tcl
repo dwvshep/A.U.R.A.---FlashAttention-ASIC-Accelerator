@@ -260,6 +260,17 @@ redirect $chk_file { check_design }
 compile -map_effort medium
 # compile_ultra
 
+# for POWER reporting
+# Either manual switching across entire design
+set_switching_activity {/$design_name/**} 1.0     ; # 100%
+# Or simulate workflow and record into SAIF the switching statistics
+# read_saif design.saif
+
+# Set power characteristic for clock
+set_switching_activity {/$design_name/$clock_name} 1.0
+
+# set power statistics
+characterize -power
 ################################
 # ---- write output files ---- #
 ################################
@@ -277,7 +288,8 @@ write_file            -format svsim   -output $svsim_file   $design_name
 
 # the various reports (design, area, timing, constraints, resources)
 redirect         $rep_file { report_design -nosplit }
-redirect -append $rep_file { report_area }
+redirect -append $rep_file { report_area}
+redirect -append $rep_file { report_power -analysis_effort high }
 redirect -append $rep_file { report_timing -max_paths 2 -input_pins -nets -transition_time -nosplit }
 redirect -append $rep_file { report_constraint -max_delay -verbose -nosplit }
 redirect -append $rep_file { report_resources -hier }

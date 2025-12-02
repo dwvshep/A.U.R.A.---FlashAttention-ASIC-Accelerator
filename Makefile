@@ -370,7 +370,7 @@ output/%.syn.out: models/%/Q.mem models/%/K.mem models/%/V.mem build/AURA.syn.si
 # Allow us to type 'make <my_program>.out' instead of 'make output/<my_program>.out'
 ./%.out: output/%.out ;
 .PHONY: ./%.out
-.PRECIOUS: %.out
+.PRECIOUS: output/%.out
 
 
 output/%.prec: output/%.out cpp/precision_measure models/%/O_fixed_correct.mem models/%/O_cleaned.mem | cpp/precision_measure
