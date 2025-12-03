@@ -47,7 +47,7 @@ module expmul_stage (
     EXPMUL_DIFF_IN_QT b;
     EXPMUL_DIFF_OUT_QT x_diff;
     EXPMUL_LOG2E_IN_QT x_diff_condensed;
-    EXPMUL_LOG2E_OUT_QT log_e_x;
+    //EXPMUL_LOG2E_OUT_QT log_e_x;
     STAR_VECTOR_T v, v_stage_2;
     logic stage_1_valid, stage_2_valid, stage_1_ready, stage_2_ready;
     EXPMUL_SHIFT_STAGE_QT shift_stage_1_1, shift_stage_2_1, shift_stage_3_1, shift_stage_4_1, shift_stage_5_1;
@@ -58,8 +58,9 @@ module expmul_stage (
     EXPMUL_SHIFT_VECTOR_T shift_stage_3_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_4_result; //Q9.23
     EXPMUL_SHIFT_VECTOR_T shift_stage_5_result; //Q9.23
+    `Q_TYPE(`EXP_LOG2E_OUT_I, 4) log_e_x;
     
-    // `Q_TYPE(5, 4) x_diff_expanded;
+    // `Q_TYPE(5, 8) x_diff_expanded;
     EXPMUL_VEC_QT v_in_1, v_out_1, v_out_0;
 
     assign v_in_1 = v_in[1];
@@ -105,12 +106,12 @@ module expmul_stage (
     //     .out(x_diff_condensed)
     // );
 
-    // q_convert #(.IN_I(5), .IN_F(4), .OUT_I(5), .OUT_F(8)) x_diff_expand(
+    // q_convert #(.IN_I(`EXPMUL_DIFF_OUT_I), .IN_F(`EXPMUL_DIFF_OUT_F), .OUT_I(`EXPMUL_DIFF_OUT_I), .OUT_F(`EXPMUL_DIFF_OUT_F + 4)) x_diff_expand(
     //     .in(x_diff),
     //     .out(x_diff_expanded)
     // );
     
-    q_convert #(.IN_I(`EXP_LOG2E_OUT_I), .IN_F(`EXP_LOG2E_OUT_F), .OUT_I(`EXPMUL_EXP_I), .OUT_F(`EXPMUL_EXP_F)) log_e_x_condense(
+    q_convert #(.IN_I(`EXP_LOG2E_OUT_I), .IN_F(4), .OUT_I(`EXPMUL_EXP_I), .OUT_F(`EXPMUL_EXP_F)) log_e_x_condense(
         .in(log_e_x),
         .out(l_hat_next)
     );
@@ -162,7 +163,7 @@ module expmul_stage (
     always_comb begin
         // log_e_x = x_diff_condensed + (x_diff_condensed >>> 1) - (x_diff_condensed >>> 4);
         // log_e_x_test = x_diff + (x_diff >>> 1) - (x_diff >>> 4);
-        // log_e_x_test = x_diff_expanded + (x_diff_expanded >>> 1) - (x_diff_expanded >>> 4);
+        // log_e_x = x_diff_expanded + (x_diff_expanded >>> 1) - (x_diff_expanded >>> 4);
         log_e_x = x_diff + (x_diff >>> 1) - (x_diff >>> 4);
     end
 

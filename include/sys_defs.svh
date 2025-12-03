@@ -33,7 +33,7 @@
 
 `define MAX_NUM_PES ((`MAX_SEQ_LENGTH * `QBYTES_FETCHED_PER_CYCLE) / (`MAX_EMBEDDING_DIM * `INTEGER_WIDTH/8)) // Maximum and optimal number of processing elements supported
 
-`define NUM_PES 1        // Number of parallel processing elements
+`define NUM_PES 4        // Number of parallel processing elements
 
 `define NUM_TILES (`MAX_SEQ_LENGTH/`NUM_PES)
 
@@ -104,7 +104,7 @@ typedef `Q_TYPE(`OUTPUT_VEC_I, `OUTPUT_VEC_F) OUTPUT_VEC_QT;
 `define EXPMUL_SHIFT_STAGE_F `EXPMUL_VEC_F + 6
 
 `define EXPMUL_EXP_F 0
-`define EXP_LOG2E_OUT_F (`ROUNDING + 3) //(`ROUNDING + 7)
+`define EXP_LOG2E_OUT_F (`ROUNDING + 1) //(`ROUNDING + 7)
 `define EXP_LOG2E_IN_F `EXP_LOG2E_OUT_F
 `define EXPMUL_DIFF_OUT_F (`EXP_LOG2E_IN_F + 1 + `ROUNDING)
 `define EXPMUL_DIFF_IN_F `EXPMUL_DIFF_OUT_F
